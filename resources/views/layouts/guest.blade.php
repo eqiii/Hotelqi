@@ -37,6 +37,7 @@
                     <a href="{{ route('home') }}" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">Home</a>
                     <a href="#about" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">About</a>
                     <a href="{{ route('rooms') }}" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">Rooms</a>
+                    <a href="{{ route('restaurant') }}" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">Restaurant</a>
                     <a href="{{ route('faq') }}" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">FAQ</a>
                     <a href="#contact" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">Contact</a>
                 </div>

@@ -6,7 +6,9 @@ use App\Http\Requests\StoreBookingRequest;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Models\RoomType;
+use App\Services\MidtransService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class BookingController extends Controller
 {
@@ -26,7 +28,7 @@ class BookingController extends Controller
 
         $priceCalc = $roomType->calculateTotalPrice($request->check_in, $request->check_out);
 
-        $guest = auth()->user()->guest;
+        $guest = Auth::user()->guest;
 
         $booking = Booking::create([
             'guest_id' => $guest->id,
@@ -42,12 +44,12 @@ class BookingController extends Controller
         $booking->histories()->create([
             'status' => 'pending',
             'notes' => 'Booking dibuat oleh tamu.',
-            'changed_by' => auth()->id(),
+            'changed_by' => Auth::id(),
         ]);
 
         $booking->payment()->create([
             'amount' => $priceCalc['total_price'],
-            'payment_method' => 'manual',
+            'payment_method' => 'midtrans',
             'payment_status' => 'unpaid',
         ]);
 
@@ -56,18 +58,38 @@ class BookingController extends Controller
 
     public function payment(Booking $booking)
     {
-        if ($booking->guest_id !== auth()->user()->guest->id) {
+        if ($booking->guest_id !== Auth::user()->guest->id) {
             abort(403);
         }
 
         $booking->load('room.roomType', 'payment');
 
-        return view('user.payment', compact('booking'));
+        $snapToken = null;
+        if ($booking->payment && $booking->payment->payment_method === 'midtrans' && !$booking->payment->isPaid()) {
+            $midtrans = new MidtransService();
+            $orderId = 'booking-' . $booking->id;
+            $snapToken = $midtrans->createSnapToken(
+                $midtrans->buildSnapParams($orderId, (int) $booking->total_price, Auth::user()->name, Auth::user()->email)
+            );
+
+            $booking->payment->update([
+                'midtrans_snap_token' => $snapToken,
+            ]);
+        }
+
+        return view('user.payment', compact('booking', 'snapToken'));
+    }
+
+    public function finishPayment(Request $request)
+    {
+        return view('user.payment-finish', [
+            'orderId' => $request->query('order_id'),
+        ]);
     }
 
     public function history()
     {
-        $bookings = auth()->user()->guest->bookings()
+        $bookings = Auth::user()->guest->bookings()
             ->with(['room.roomType', 'payment'])
             ->latest()
             ->paginate(10);

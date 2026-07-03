@@ -1,7 +1,7 @@
 <x-guest-layout title="Login">
-    <div class="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative" 
+    <div class="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative"
          style="background-image: url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80'); background-size: cover; background-position: center;">
-        
+
         <!-- Dark Overlay -->
         <div class="absolute inset-0 bg-gray-900 bg-opacity-70 backdrop-blur-sm"></div>
 
@@ -14,6 +14,18 @@
                 <h2 class="font-playfair text-3xl font-bold text-gray-900">Welcome Back</h2>
                 <p class="text-gray-500 mt-2 text-sm">Login to access your reservation</p>
             </div>
+
+            @if(session('success'))
+                <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded">
+                    <p class="text-sm text-green-700">{{ session('success') }}</p>
+                </div>
+            @endif
+
+            @if(session('warning'))
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded">
+                    <p class="text-sm text-yellow-700">{{ session('warning') }}</p>
+                </div>
+            @endif
 
             @if ($errors->any())
                 <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
@@ -34,16 +46,16 @@
                 <!-- Email -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <input type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition bg-gray-50" 
+                    <input type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition bg-gray-50"
                            placeholder="name@example.com">
                 </div>
 
                 <!-- Password -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                    <input type="password" name="password" required autocomplete="current-password" 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition bg-gray-50" 
+                    <input type="password" name="password" required autocomplete="current-password"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition bg-gray-50"
                            placeholder="••••••••">
                 </div>
 
@@ -56,6 +68,13 @@
                     @if (Route::has('password.request'))
                         <a href="{{ route('password.request') }}" class="text-sm text-amber-600 hover:text-amber-700 font-medium transition">Forgot password?</a>
                     @endif
+                </div>
+
+                <div class="text-center">
+                    <a href="{{ route('login.google') }}" class="w-full inline-flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-3 text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 transition mt-4">
+                        <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" class="h-5 w-5">
+                        Login with Google
+                    </a>
                 </div>
 
                 <!-- CAPTCHA Placeholder (Wajib sesuai PRD) -->
@@ -71,7 +90,7 @@
 
             <div class="mt-8 text-center">
                 <p class="text-sm text-gray-600">
-                    Don't have an account? 
+                    Don't have an account?
                     <a href="{{ route('register') }}" class="text-amber-600 hover:text-amber-700 font-semibold transition">Register here</a>
                 </p>
             </div>

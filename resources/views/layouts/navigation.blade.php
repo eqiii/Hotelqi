@@ -1,20 +1,46 @@
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+    @php
+        $dashboardRoute = auth()->user()->isAdmin() ? route('admin.dashboard') : route('user.dashboard');
+        $dashboardActive = request()->routeIs('admin.dashboard') || request()->routeIs('user.dashboard');
+    @endphp
+
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
+                    <a href="{{ $dashboardRoute }}">
                         <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
+                    @if(auth()->user()->isAdmin())
+                        <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                            {{ __('Dashboard') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.bookings.index')" :active="request()->routeIs('admin.bookings.*')">
+                            {{ __('Bookings') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.guests.index')" :active="request()->routeIs('admin.guests.*')">
+                            {{ __('Guests') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.room-types.index')" :active="request()->routeIs('admin.room-types.*')">
+                            {{ __('Room Types') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.rooms.index')" :active="request()->routeIs('admin.rooms.*')">
+                            {{ __('Rooms') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.restaurant-menus.index')" :active="request()->routeIs('admin.restaurant-menus.*')">
+                            {{ __('Menus') }}
+                        </x-nav-link>
+                    @else
+                        <x-nav-link :href="$dashboardRoute" :active="$dashboardActive">
+                            {{ __('Dashboard') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -67,7 +93,7 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+            <x-responsive-nav-link :href="$dashboardRoute" :active="$dashboardActive">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
         </div>

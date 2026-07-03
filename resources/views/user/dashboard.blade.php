@@ -51,16 +51,27 @@
                     </a>
                 </div>
 
-                <!-- Action 2: Edit Profile (DINONAKTIFKAN SEMENTARA) -->
-                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition opacity-60">
+                <!-- Action 2: Edit Profile -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition">
                     <div class="text-amber-600 text-3xl mb-4">👤</div>
                     <h4 class="text-lg font-bold text-gray-800 mb-2">Profil Saya</h4>
                     <p class="text-sm text-gray-600 mb-4">Perbarui informasi kontak, alamat email, dan kata sandi akun Anda.</p>
-                    <span class="text-gray-400 text-sm font-medium">Segera Hadir</span>
-                    <!-- Route profile.edit akan ditambahkan nanti -->
+                    <a href="{{ route('profile.edit') }}" class="text-amber-600 hover:text-amber-700 font-semibold text-sm transition">
+                        Buka Profil →
+                    </a>
                 </div>
 
-                <!-- Action 3: Contact Service -->
+                <!-- Action 3: Restaurant Orders -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition">
+                    <div class="text-amber-600 text-3xl mb-4">🍽️</div>
+                    <h4 class="text-lg font-bold text-gray-800 mb-2">Pesanan Restoran</h4>
+                    <p class="text-sm text-gray-600 mb-4">Kelola pesanan makanan Anda selama menginap dengan cepat dan mudah.</p>
+                    <a href="{{ route('restaurant.orders') }}" class="text-amber-600 hover:text-amber-700 font-semibold text-sm transition">
+                        Lihat Pesanan →
+                    </a>
+                </div>
+
+                <!-- Action 4: Contact Service -->
                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition">
                     <div class="text-amber-600 text-3xl mb-4">🛎️</div>
                     <h4 class="text-lg font-bold text-gray-800 mb-2">Layanan Pelanggan</h4>

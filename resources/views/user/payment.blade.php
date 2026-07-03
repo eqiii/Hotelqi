@@ -48,39 +48,77 @@
                     </div>
                 </div>
 
-                <!-- Payment Method / Transfer Instructions -->
-                <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                    <h4 class="font-bold text-gray-800 mb-4 flex items-center">
-                        <span class="text-xl mr-2">💳</span> Instruksi Pembayaran Transfer Bank
-                    </h4>
-                    <p class="text-sm text-gray-600 mb-4">Silakan transfer pembayaran Anda ke salah satu rekening berikut:</p>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div class="bg-white p-4 rounded border border-gray-200">
-                            <p class="text-xs font-semibold text-gray-400">BANK BCA</p>
-                            <p class="text-lg font-bold text-gray-800 tracking-wider">123-45678-90</p>
-                            <p class="text-xs text-gray-500">a/n PT. Hotel Mewah Indonesia</p>
-                        </div>
-                        <div class="bg-white p-4 rounded border border-gray-200">
-                            <p class="text-xs font-semibold text-gray-400">BANK MANDIRI</p>
-                            <p class="text-lg font-bold text-gray-800 tracking-wider">987-654-321-0</p>
-                            <p class="text-xs text-gray-500">a/n PT. Hotel Mewah Indonesia</p>
+                @if($booking->payment && $booking->payment->payment_status === 'paid')
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                        <h4 class="text-lg font-semibold text-green-800">Pembayaran Terbayar</h4>
+                        <p class="text-sm text-green-700 mt-2">Pembayaran Anda telah berhasil. Terima kasih dan selamat menikmati layanan kami.</p>
+                    </div>
+                @elseif(isset($snapToken) && $snapToken)
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-6">
+                        <h4 class="text-lg font-semibold text-amber-900 mb-3">Pembayaran Midtrans</h4>
+                        <p class="text-sm text-gray-600 mb-4">Klik tombol di bawah untuk melanjutkan pembayaran menggunakan metode yang Anda pilih.</p>
+                        <button id="pay-button" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold uppercase tracking-widest px-6 py-3 rounded-lg transition">
+                            Bayar Sekarang
+                        </button>
+                    </div>
+                @else
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-6">
+                        <h4 class="font-bold text-gray-800 mb-4 flex items-center"><span class="text-xl mr-2">💳</span> Pembayaran Midtrans</h4>
+                        <p class="text-sm text-gray-600 mb-4">Silakan kembali ke riwayat pemesanan dan mulai ulang proses pembayaran jika diperlukan.</p>
+                    </div>
+                @endif
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h4 class="font-bold text-gray-800 mb-4">Ringkasan Pemesanan</h4>
+                        <div class="space-y-2 text-sm text-gray-600">
+                            <div class="flex justify-between">
+                                <span>Sub-total</span>
+                                <span>{{ format_rupiah($booking->total_price) }}</span>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="text-xs text-gray-500 space-y-1">
-                        <p class="font-semibold text-gray-700">Penting:</p>
-                        <p>1. Transfer tepat sesuai nominal total tagihan: <span class="font-bold text-amber-600">{{ format_rupiah($booking->total_price) }}</span>.</p>
-                        <p>2. Setelah melakukan transfer, silakan konfirmasikan pembayaran Anda ke Resepsionis kami dengan melampirkan bukti transfer atau menunggu konfirmasi otomatis dari sistem Admin kami.</p>
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h4 class="font-bold text-gray-800 mb-4">Catatan</h4>
+                        <p class="text-sm text-gray-600">Jika ada kendala pembayaran, hubungi layanan pelanggan kami atau periksa kembali detail booking Anda.</p>
                     </div>
                 </div>
 
-                <div class="mt-8 flex justify-end">
-                    <a href="{{ route('user.booking.history') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-6 rounded-lg transition mr-4 text-sm">
+                <div class="mt-8 flex justify-between items-center">
+                    <a href="{{ route('user.booking.history') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-6 rounded-lg transition text-sm">
                         Kembali ke Riwayat
                     </a>
+                    @if(isset($snapToken) && $snapToken)
+                        <a href="{{ route('payment.finish') }}" class="text-amber-600 hover:text-amber-700 text-sm font-semibold">Lihat hasil pembayaran</a>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
+
+    @if(isset($snapToken) && $snapToken)
+        <script src="{{ config('mdtrans.is_production') ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}" data-client-key="{{ config('mdtrans.client_key') }}"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const payButton = document.getElementById('pay-button');
+                if (!payButton) return;
+
+                payButton.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    window.snap.pay('{{ $snapToken }}', {
+                        onSuccess: function(result){
+                            window.location.href = '{{ route('payment.finish') }}?order_id=booking-{{ $booking->id }}';
+                        },
+                        onPending: function(result){
+                            window.location.href = '{{ route('payment.finish') }}?order_id=booking-{{ $booking->id }}';
+                        },
+                        onError: function(result){
+                            alert('Pembayaran gagal. Silakan coba lagi.');
+                        }
+                    });
+                });
+            });
+        </script>
+    @endif
 </x-app-layout>

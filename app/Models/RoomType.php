@@ -141,4 +141,15 @@ class RoomType extends Model
             'breakdown'    => $breakdown,
         ];
     }
+
+    public function isAvailable(string $checkIn, string $checkOut): bool
+    {
+        return !$this->bookings()
+            ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+            ->where(function ($query) use ($checkIn, $checkOut) {
+                $query->where('check_in', '<', $checkOut)
+                    ->where('check_out', '>', $checkIn);
+            })
+            ->exists();
+    }
 }

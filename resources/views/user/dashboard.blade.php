@@ -66,7 +66,7 @@
                     <div class="text-amber-600 text-3xl mb-4">🍽️</div>
                     <h4 class="text-lg font-bold text-gray-800 mb-2">Pesanan Restoran</h4>
                     <p class="text-sm text-gray-600 mb-4">Kelola pesanan makanan Anda selama menginap dengan cepat dan mudah.</p>
-                    <a href="{{ route('restaurant.orders') }}" class="text-amber-600 hover:text-amber-700 font-semibold text-sm transition">
+                    <a href="{{ route('user.restaurant.orders') }}" class="text-amber-600 hover:text-amber-700 font-semibold text-sm transition">
                         Lihat Pesanan →
                     </a>
                 </div>

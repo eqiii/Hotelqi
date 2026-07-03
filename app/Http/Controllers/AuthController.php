@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Registered;
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
@@ -68,6 +69,25 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
+        $response = Http::asForm()->post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            [
+                'secret' => config('services.recaptcha.secret_key'),
+                'response' => $request->input('g-recaptcha-response'),
+                'remoteip' => $request->ip(),
+            ]
+        );
+
+        $result = $response->json();
+
+        if (!($result['success'] ?? false)) {
+            return back()
+                ->withErrors([
+                    'g-recaptcha-response' => 'Silakan selesaikan verifikasi CAPTCHA.',
+                ])
+                ->withInput();
+        }
+
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
@@ -93,60 +113,6 @@ class AuthController extends Controller
         ])->onlyInput('email');
     }
 
-    /**
-     * Redirect to Google OAuth
-     */
-    public function redirectToGoogle()
-    {
-        return Socialite::driver('google')->redirect();
-    }
-
-    /**
-     * Handle callback from Google OAuth
-     */
-    public function handleGoogleCallback(Request $request)
-    {
-        try {
-            $googleUser = Socialite::driver('google')->user();
-        } catch (\Exception $exception) {
-            return redirect()->route('login')->with('warning', 'Gagal login menggunakan Google. Silakan coba lagi.');
-        }
-
-        if (! $googleUser->getEmail()) {
-            return redirect()->route('login')->with('warning', 'Google login membutuhkan alamat email.');
-        }
-
-        $user = User::where('email', $googleUser->getEmail())->first();
-
-        if (! $user) {
-            $user = User::create([
-                'name' => $googleUser->getName() ?? $googleUser->getNickname() ?? 'Pengguna Google',
-                'email' => $googleUser->getEmail(),
-                'role' => 'guest',
-                'email_verified_at' => now(),
-                'provider' => 'google',
-                'provider_id' => $googleUser->getId(),
-            ]);
-
-            Guest::create([
-                'user_id' => $user->id,
-                'phone' => null,
-            ]);
-        } else {
-            $user->update([
-                'provider' => 'google',
-                'provider_id' => $googleUser->getId(),
-                'email_verified_at' => $user->email_verified_at ?? now(),
-            ]);
-        }
-
-        Auth::login($user, true);
-        $request->session()->regenerate();
-
-        return $user->role === 'admin'
-            ? redirect()->intended(route('admin.dashboard'))
-            : redirect()->intended(route('user.dashboard'));
-    }
 
     /**
      * Handle logout

@@ -26,6 +26,12 @@ class StoreBookingRequest extends FormRequest
             'check_in' => ['required', 'date', 'after_or_equal:today'],
             'check_out' => ['required', 'date', 'after:check_in'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            // Guest fields
+            'full_name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:30'],
+            'address' => ['required', 'string', 'max:1000'],
+            'ktp_number' => ['required', 'string', 'max:100'],
+            'avatar' => ['nullable', 'image', 'max:2048'],
         ];
     }
 }

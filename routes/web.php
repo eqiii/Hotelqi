@@ -107,6 +107,7 @@ Route::middleware(['auth', 'verified', 'role:guest'])->prefix('user')->name('use
     })->name('dashboard');
 
     Route::post('/booking', [BookingController::class, 'store'])->name('booking.store');
+    Route::get('/booking/create/{roomType}', [BookingController::class, 'create'])->name('booking.create');
     Route::get('/booking/{booking}/payment', [BookingController::class, 'payment'])->name('booking.payment');
     Route::get('/booking/history', [BookingController::class, 'history'])->name('booking.history');
 

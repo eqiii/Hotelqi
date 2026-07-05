@@ -15,17 +15,28 @@ class BookingController extends Controller
     public function store(StoreBookingRequest $request)
     {
         $user = Auth::user();
+        // Ensure room type exists
+        $roomType = RoomType::findOrFail($request->room_type_id);
 
-        // Pastikan user punya guest record
+        // Update or create guest data from form (phone, address, ktp_number, avatar)
         $guest = $user->guest;
 
-        if (!$guest) {
-            return redirect()->back()->withErrors([
-                'general' => 'Profil tamu Anda belum lengkap. Silakan hubungi admin.',
-            ])->withInput();
+        $guestData = [
+            'full_name' => $request->full_name,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'ktp_number' => $request->ktp_number,
+        ];
+
+        if ($request->hasFile('avatar')) {
+            $guestData['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
-        $roomType = RoomType::findOrFail($request->room_type_id);
+        if ($guest) {
+            $guest->update($guestData);
+        } else {
+            $guest = $user->guest()->create($guestData + ['user_id' => $user->id]);
+        }
 
         $room = Room::where('room_type_id', $request->room_type_id)
             ->availableBetween($request->check_in, $request->check_out)
@@ -59,17 +70,24 @@ class BookingController extends Controller
         $booking->payment()->create([
             'amount'         => $priceCalc['total_price'],
             'payment_method' => 'midtrans',
-            'payment_status' => 'unpaid',
+            'payment_status' => \App\Enums\PaymentStatus::PENDING,
         ]);
 
         return redirect()->route('user.booking.payment', $booking)
             ->with('success', 'Booking berhasil dibuat! Silakan selesaikan pembayaran.');
     }
 
+    public function create(RoomType $roomType)
+    {
+        // Render the combined guest + booking form. Guest can be created/updated on submit.
+        return view('user.booking.create', compact('roomType'));
+    }
+
     public function payment(Booking $booking)
     {
-        // Pastikan booking milik user yang login
-        if ($booking->guest_id !== Auth::user()->guest->id) {
+        // Pastikan booking milik user yang login (safely check guest)
+        $guestId = Auth::user()->guest?->id;
+        if ($booking->guest_id !== $guestId) {
             abort(403, 'Anda tidak berhak mengakses halaman ini.');
         }
 
@@ -133,7 +151,12 @@ class BookingController extends Controller
 
     public function history()
     {
-        $bookings = Auth::user()->guest->bookings()
+        $guest = Auth::user()->guest;
+        if (!$guest) {
+            return redirect()->route('profile.edit')->withErrors(['general' => 'Silakan lengkapi data tamu Anda terlebih dahulu.']);
+        }
+
+        $bookings = $guest->bookings()
             ->with(['room.roomType', 'payment'])
             ->latest()
             ->paginate(10);

@@ -126,7 +126,7 @@
                                     {{ ucfirst(str_replace('_', ' ', $booking->status)) }}
                                 </span>
                             </div>
-                            @if($booking->status === 'pending' && $booking->payment?->payment_status === 'unpaid')
+                            @if($booking->status === 'pending' && $booking->payment?->payment_status === 'pending')
                                 <a href="{{ route('user.booking.payment', $booking) }}"
                                    class="flex-shrink-0 gold-btn text-xs px-3 py-1.5 rounded-lg font-semibold">
                                     Bayar

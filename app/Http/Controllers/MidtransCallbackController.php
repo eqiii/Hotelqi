@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Services\MidtransService;
+use App\Enums\PaymentStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -36,6 +37,9 @@ class MidtransCallbackController extends Controller
             $fraudStatus = $notification->fraud_status ?? null;
             $transactionId = $notification->transaction_id ?? null;
 
+            // remember prior paid state to decide whether to call markAsPaid()
+            $wasPaid = $payment->isPaid();
+
             Log::info('Midtrans callback received', [
                 'order_id'           => $orderId,
                 'transaction_status' => $transactionStatus,
@@ -43,18 +47,27 @@ class MidtransCallbackController extends Controller
             ]);
 
             // Tentukan status pembayaran berdasarkan status dari Midtrans
+            // Map Midtrans statuses to local payment_status values (canonical)
             if ($transactionStatus === 'capture') {
+                // capture (card) -> paid unless fraud challenge
                 if ($fraudStatus === 'challenge') {
-                    $newPaymentStatus = 'unpaid'; // Masih menunggu review fraud
+                    $newPaymentStatus = PaymentStatus::PENDING; // still pending review
                 } else {
-                    $newPaymentStatus = 'paid';
+                    $newPaymentStatus = PaymentStatus::PAID;
                 }
             } elseif ($transactionStatus === 'settlement') {
-                $newPaymentStatus = 'paid';
-            } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
-                $newPaymentStatus = 'failed';
+                $newPaymentStatus = PaymentStatus::PAID;
             } elseif ($transactionStatus === 'pending') {
-                $newPaymentStatus = 'unpaid';
+                $newPaymentStatus = PaymentStatus::PENDING;
+            } elseif ($transactionStatus === 'expire') {
+                $newPaymentStatus = PaymentStatus::EXPIRED;
+            } elseif (in_array($transactionStatus, ['cancel', 'failure', 'deny'], true)) {
+                // Map cancel/failure/deny to 'cancelled' or 'failed' depending on semantics; choose CANCELLED for cancel/deny, FAILED for failure
+                if ($transactionStatus === 'cancel' || $transactionStatus === 'deny') {
+                    $newPaymentStatus = PaymentStatus::CANCELLED;
+                } else {
+                    $newPaymentStatus = PaymentStatus::FAILED;
+                }
             } else {
                 $newPaymentStatus = $payment->payment_status;
             }
@@ -64,8 +77,8 @@ class MidtransCallbackController extends Controller
                 'payment_status'          => $newPaymentStatus,
             ]);
 
-            // Jika pembayaran berhasil, mark as paid dan auto confirm
-            if ($newPaymentStatus === 'paid' && !$payment->isPaid()) {
+            // Jika pembayaran baru saja menjadi 'paid', jalankan markAsPaid() untuk set paid_at dan konfirmasi booking
+            if ($newPaymentStatus === PaymentStatus::PAID && !$wasPaid) {
                 $payment->markAsPaid();
             }
 

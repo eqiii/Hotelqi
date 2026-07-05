@@ -46,11 +46,12 @@ class Payment extends Model
     public function getStatusBadgeAttribute(): string
     {
         return match ($this->payment_status) {
-            'unpaid'  => 'bg-yellow-100 text-yellow-800',
-            'paid'    => 'bg-green-100 text-green-800',
-            'failed'  => 'bg-red-100 text-red-800',
-            'expired' => 'bg-gray-100 text-gray-800',
-            'refunded' => 'bg-purple-100 text-purple-800',
+            \App\Enums\PaymentStatus::PENDING   => 'bg-yellow-100 text-yellow-800',
+            \App\Enums\PaymentStatus::PAID      => 'bg-green-100 text-green-800',
+            \App\Enums\PaymentStatus::FAILED    => 'bg-red-100 text-red-800',
+            \App\Enums\PaymentStatus::EXPIRED   => 'bg-gray-100 text-gray-800',
+            \App\Enums\PaymentStatus::REFUNDED  => 'bg-purple-100 text-purple-800',
+            \App\Enums\PaymentStatus::CANCELLED => 'bg-red-100 text-red-800',
             default   => 'bg-gray-100 text-gray-800',
         };
     }
@@ -60,7 +61,7 @@ class Payment extends Model
     public function markAsPaid(): void
     {
         $this->update([
-            'payment_status' => 'paid',
+            'payment_status' => \App\Enums\PaymentStatus::PAID,
             'paid_at'        => now(),
         ]);
 
@@ -72,6 +73,6 @@ class Payment extends Model
 
     public function isPaid(): bool
     {
-        return $this->payment_status === 'paid';
+        return $this->payment_status === \App\Enums\PaymentStatus::PAID;
     }
 }

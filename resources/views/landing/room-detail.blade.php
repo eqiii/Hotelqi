@@ -10,7 +10,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
                 <!-- Image -->
                 <div>
-                    <img src="{{ $roomType->image_url }}" alt="{{ $roomType->name }}" 
+                    <img src="{{ $roomType->image_url }}" alt="{{ $roomType->name }}"
                          class="w-full h-[500px] object-cover rounded-lg shadow-xl">
                 </div>
 
@@ -21,7 +21,7 @@
                             {{ format_rupiah($roomType->base_price) }} / night
                         </span>
                     </div>
-                    
+
                     <h2 class="font-playfair text-3xl font-bold text-gray-900 mb-4">{{ $roomType->name }}</h2>
                     <p class="text-gray-600 leading-relaxed mb-8">{{ $roomType->description }}</p>
 
@@ -53,29 +53,11 @@
                         @endforeach
                     </div>
 
-                    <!-- Booking Form -->
+                    <!-- Book Now CTA -> opens dedicated booking page -->
                     @auth
-                        <form action="{{ route('user.booking.store') }}" method="POST" class="bg-gray-50 p-6 rounded-lg">
-                            @csrf
-                            <input type="hidden" name="room_type_id" value="{{ $roomType->id }}">
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Check In</label>
-                                    <input type="date" name="check_in" required class="w-full border border-gray-300 rounded-md p-2 focus:border-amber-600 focus:ring-amber-600">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Check Out</label>
-                                    <input type="date" name="check_out" required class="w-full border border-gray-300 rounded-md p-2 focus:border-amber-600 focus:ring-amber-600">
-                                </div>
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-                                <textarea name="notes" rows="2" class="w-full border border-gray-300 rounded-md p-2 focus:border-amber-600 focus:ring-amber-600"></textarea>
-                            </div>
-                            <button type="submit" class="w-full bg-amber-600 text-white py-3 text-sm tracking-widest uppercase hover:bg-amber-700 transition font-semibold">
-                                Book Now
-                            </button>
-                        </form>
+                        <a href="{{ route('user.booking.create', $roomType->id) }}" class="inline-block w-full text-center bg-amber-600 text-white py-3 text-sm tracking-widest uppercase hover:bg-amber-700 transition font-semibold rounded-lg">
+                            Book Now
+                        </a>
                     @else
                         <a href="{{ route('login') }}" class="block w-full bg-amber-600 text-white py-3 text-center text-sm tracking-widest uppercase hover:bg-amber-700 transition font-semibold rounded-lg">
                             Login to Book

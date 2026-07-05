@@ -29,9 +29,18 @@
                 </a>
 
                 @php
-                    $isSuccess = in_array($status ?? '', ['settlement', 'capture', 'success']) || ($booking && $booking->payment?->isPaid());
-                    $isPending = in_array($status ?? '', ['pending', 'challenge']);
-                    $isFailed  = in_array($status ?? '', ['cancel', 'deny', 'expire', 'failed']) && !$isSuccess;
+                    $paymentStatus = $booking->payment?->payment_status ?? null;
+
+                    if ($paymentStatus) {
+                        $isSuccess = $paymentStatus === \App\Enums\PaymentStatus::PAID;
+                        $isPending = $paymentStatus === \App\Enums\PaymentStatus::PENDING;
+                        $isFailed = in_array($paymentStatus, [\App\Enums\PaymentStatus::FAILED, \App\Enums\PaymentStatus::EXPIRED, \App\Enums\PaymentStatus::CANCELLED]);
+                    } else {
+                        // Fallback to raw status if booking/payment not found
+                        $isSuccess = in_array($status ?? '', ['settlement', 'capture', 'success']);
+                        $isPending = in_array($status ?? '', ['pending', 'challenge']);
+                        $isFailed  = in_array($status ?? '', ['cancel', 'deny', 'expire', 'failed']) && !$isSuccess;
+                    }
                 @endphp
 
                 @if($isSuccess)

@@ -34,11 +34,30 @@ class MidtransService
      *
      * Midtrans biasanya mengirim payload callback lewat request body.
      */
-    public function getNotification(array $payload = []): Notification
+    /**
+     * Returns a Midtrans\Notification instance when reading from php://input.
+     * If an array payload is provided (for testing), returns a Notification-like object.
+     *
+     * Note: keep return type flexible to support both SDK Notification and test payloads.
+     */
+    public function getNotification(array|string $payload = null)
     {
         $this->init();
 
-        return new Notification($payload);
+        // Midtrans\Notification expects a stream/filename that contains JSON.
+        // If caller passed an array (from a Request), wrap it into a data:// stream.
+        if (is_array($payload) && !empty($payload)) {
+            // Build a lightweight object that mimics the properties used by our code
+            return (object) [
+                'order_id' => $payload['order_id'] ?? null,
+                'transaction_status' => $payload['transaction_status'] ?? null,
+                'fraud_status' => $payload['fraud_status'] ?? null,
+                'transaction_id' => $payload['transaction_id'] ?? null,
+            ];
+        }
+
+        // Fallback: let Notification read from php://input
+        return new Notification();
     }
 
 

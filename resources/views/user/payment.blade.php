@@ -109,7 +109,7 @@
                     <p class="text-sm text-green-700">Terima kasih! Booking Anda telah dikonfirmasi. Kami menantikan kedatangan Anda.</p>
                 </div>
 
-            @elseif(isset($snapToken) && $snapToken)
+                @elseif(isset($snapToken) && $snapToken)
                 <div class="card-hotel p-6">
                     <h4 class="font-playfair text-lg font-bold text-gray-800 mb-2">Selesaikan Pembayaran</h4>
                     <p class="text-sm text-gray-600 mb-5">Klik tombol di bawah untuk membuka halaman pembayaran Midtrans. Anda dapat membayar dengan kartu kredit, transfer bank, e-wallet, dan lainnya.</p>

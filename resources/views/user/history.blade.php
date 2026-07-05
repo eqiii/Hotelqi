@@ -83,7 +83,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    @if($booking->status === 'pending' || ($booking->payment && $booking->payment->payment_status === 'unpaid'))
+                                    @if($booking->status === 'pending' || ($booking->payment && $booking->payment->payment_status === 'pending'))
                                         <a href="{{ route('user.booking.payment', $booking) }}"
                                            class="gold-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,7 +130,7 @@
                                 <p class="text-xs text-gray-500">{{ $booking->check_in->format('d M') }} - {{ $booking->check_out->format('d M Y') }}</p>
                                 <p class="font-bold text-gray-800">{{ format_rupiah($booking->total_price) }}</p>
                             </div>
-                            @if($booking->status === 'pending' || ($booking->payment && $booking->payment->payment_status === 'unpaid'))
+                            @if($booking->status === 'pending' || ($booking->payment && $booking->payment->payment_status === 'pending'))
                                 <a href="{{ route('user.booking.payment', $booking) }}"
                                    class="gold-btn px-4 py-2 rounded-lg text-xs font-semibold">
                                     Bayar Sekarang

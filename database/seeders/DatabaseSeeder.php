@@ -15,27 +15,36 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // ==========================
-        // Admin Account
+        // Admin Account (Primary)
         // ==========================
         User::firstOrCreate(
-            ['email' => 'admin@gmail.com'],
+            ['email' => 'admin@hoteleqi.com'],
             [
-                'name' => 'Administrator',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
+                'name'              => 'Administrator',
+                'password'          => Hash::make('Admin@12345'),
+                'role'              => 'admin',
                 'email_verified_at' => now(),
             ]
         );
 
+        // Admin fallback (lama) - update password jika ada
+        $oldAdmin = User::where('email', 'admin@gmail.com')->first();
+        if ($oldAdmin) {
+            $oldAdmin->update([
+                'password'          => Hash::make('Admin@12345'),
+                'email_verified_at' => now(),
+            ]);
+        }
+
         // ==========================
-        // Guest Account
+        // Guest Account (untuk testing)
         // ==========================
         $guestUser = User::firstOrCreate(
             ['email' => 'test@example.com'],
             [
-                'name' => 'Test User',
-                'password' => Hash::make('password'),
-                'role' => 'guest',
+                'name'              => 'Test User',
+                'password'          => Hash::make('password'),
+                'role'              => 'guest',
                 'email_verified_at' => now(),
             ]
         );

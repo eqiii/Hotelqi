@@ -23,10 +23,16 @@ class AdminBookingController extends Controller
         return view('admin.bookings.index', compact('bookings'));
     }
 
+    public function show(Booking $booking)
+    {
+        $booking->load(['guest.user', 'room.roomType', 'payment', 'histories']);
+        return view('admin.bookings.show', compact('booking'));
+    }
+
     public function confirm(Booking $booking)
     {
         $booking->updateStatus('confirmed', 'Booking dikonfirmasi oleh Admin.', auth()->id());
-        
+
         if ($booking->payment && !$booking->payment->isPaid()) {
             $booking->payment->markAsPaid();
         }
@@ -48,5 +54,16 @@ class AdminBookingController extends Controller
         $booking->room->update(['status' => 'available']);
 
         return redirect()->back()->with('status', 'Check-out berhasil.');
+    }
+
+    public function cancel(Booking $booking)
+    {
+        $booking->updateStatus('cancelled', 'Booking dibatalkan oleh Admin.', auth()->id());
+
+        if ($booking->room && $booking->room->status === 'occupied') {
+            $booking->room->update(['status' => 'available']);
+        }
+
+        return redirect()->back()->with('status', 'Booking berhasil dibatalkan.');
     }
 }

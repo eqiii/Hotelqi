@@ -1,6 +1,7 @@
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
     @php
-        $dashboardRoute = auth()->user()->isAdmin() ? route('admin.dashboard') : route('user.dashboard');
+        $currentUser = auth()->user();
+        $dashboardRoute = $currentUser && $currentUser->isAdmin() ? route('admin.dashboard') : route('user.dashboard');
         $dashboardActive = request()->routeIs('admin.dashboard') || request()->routeIs('user.dashboard');
     @endphp
 

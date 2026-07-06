@@ -18,10 +18,20 @@ class MidtransCallbackController extends Controller
             $midtrans = new MidtransService();
             $notification = $midtrans->getNotification($request->all());
 
+
             $orderId = $notification->order_id ?? null;
             if (!$orderId) {
                 Log::warning('Midtrans callback: Order ID tidak ditemukan', $request->all());
                 return response('Order ID tidak ditemukan', 400);
+            }
+
+            // SECURITY: verify this notification was really sent by Midtrans
+            // before trusting any of its content.
+            if (!$midtrans->verifySignature($notification)) {
+                Log::warning('Midtrans callback: Signature tidak valid / dipalsukan', [
+                    'order_id' => $orderId,
+                ]);
+                return response('Invalid signature', 403);
             }
 
             $bookingId = (int) str_replace('booking-', '', $orderId);
@@ -33,6 +43,20 @@ class MidtransCallbackController extends Controller
             }
 
             $payment = $booking->payment;
+
+            // SECURITY: the gross_amount Midtrans confirms must match what we
+            // actually charged for this booking, otherwise a signature valid
+            // for a *different*, cheaper transaction could be replayed here.
+            $notifiedAmount = (float) ($notification->gross_amount ?? 0);
+            if ($notifiedAmount > 0 && abs($notifiedAmount - (float) $payment->amount) > 1.0) {
+                Log::warning('Midtrans callback: Jumlah tidak cocok', [
+                    'order_id' => $orderId,
+                    'expected' => $payment->amount,
+                    'notified' => $notifiedAmount,
+                ]);
+                return response('Amount mismatch', 400);
+            }
+
             $transactionStatus = $notification->transaction_status ?? null;
             $fraudStatus = $notification->fraud_status ?? null;
             $transactionId = $notification->transaction_id ?? null;

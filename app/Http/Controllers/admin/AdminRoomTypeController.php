@@ -11,9 +11,10 @@ class AdminRoomTypeController extends Controller
 {
     public function index()
     {
-        $types = RoomType::latest()->paginate(15);
+        $roomTypes = RoomType::latest()->paginate(10);
+        $types = $roomTypes;
 
-        return view('admin.room-types.index', compact('types'));
+        return view('admin.room-types.index', compact('roomTypes', 'types'));
     }
 
     public function create()
@@ -29,7 +30,7 @@ class AdminRoomTypeController extends Controller
             'base_price' => ['required', 'numeric', 'min:0'],
             'max_guest' => ['nullable', 'integer', 'min:1'],
             'total_bed' => ['nullable', 'integer', 'min:1'],
-            'image' => ['nullable', 'image', 'max:2048'],
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
 
         if ($request->hasFile('image')) {

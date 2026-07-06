@@ -3,7 +3,7 @@
 
     <h2 class="font-playfair text-2xl font-bold">Edit Menu Item</h2>
 
-    <form method="POST" action="{{ route('admin.restaurant-menus.update', $restaurantMenu) }}" class="mt-4">@csrf
+    <form method="POST" action="{{ route('admin.restaurant-menus.update', $restaurantMenu) }}" class="mt-4" enctype="multipart/form-data">@csrf
         @method('PATCH')
         <div>
             <label>Name</label>
@@ -17,6 +17,15 @@
         <div>
             <label>Description</label>
             <textarea name="description">{{ old('description', $restaurantMenu->description) }}</textarea>
+        </div>
+        <div>
+            <label>Image</label>
+            <input type="file" name="image" accept="image/jpeg,image/png" />
+            @if ($restaurantMenu->image)
+                <div class="mt-3">
+                    <img src="{{ asset('storage/' . $restaurantMenu->image) }}" alt="{{ $restaurantMenu->name }}" class="h-32 rounded-lg object-cover" />
+                </div>
+            @endif
         </div>
         <button class="gold-btn mt-3">Save</button>
     </form>

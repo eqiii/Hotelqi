@@ -104,13 +104,32 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
+            $loginAs = $request->input('login_as', 'guest');
+
+            if ($loginAs === 'guest' && $user->role !== 'guest') {
+                Auth::logout();
+
+                return back()->withErrors([
+                    'login_as' => 'Invalid customer account',
+                ])->withInput($request->only('email', 'remember', 'login_as'));
+            }
+
+            if ($loginAs === 'admin' && $user->role !== 'admin') {
+                Auth::logout();
+
+                return back()->withErrors([
+                    'login_as' => 'You are not authorized as staff',
+                ])->withInput($request->only('email', 'remember', 'login_as'));
+            }
 
             if (!$user->hasVerifiedEmail()) {
                 return redirect()->intended(route('dashboard', [], false))
                     ->with('warning', 'Silakan verifikasi email Anda terlebih dahulu.');
             }
 
-            return redirect()->intended(route('dashboard', [], false));
+            $redirectTo = $loginAs === 'admin' ? '/admin/dashboard' : '/user/dashboard';
+
+            return redirect()->intended($redirectTo);
         }
 
         return back()->withErrors([

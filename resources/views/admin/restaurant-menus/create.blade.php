@@ -3,7 +3,7 @@
 
     <h2 class="font-playfair text-2xl font-bold">Create Menu Item</h2>
 
-    <form method="POST" action="{{ route('admin.restaurant-menus.store') }}" class="mt-4">
+    <form method="POST" action="{{ route('admin.restaurant-menus.store') }}" class="mt-4" enctype="multipart/form-data">
         @csrf
         <div>
             <label>Name</label>
@@ -16,6 +16,10 @@
         <div>
             <label>Description</label>
             <textarea name="description"></textarea>
+        </div>
+        <div>
+            <label>Image</label>
+            <input type="file" name="image" accept="image/jpeg,image/png" />
         </div>
         <button class="gold-btn mt-3">Create</button>
     </form>

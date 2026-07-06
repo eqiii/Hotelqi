@@ -29,7 +29,7 @@ class AdminRestaurantMenuController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
             'category' => ['nullable', 'string', 'max:100'],
             'is_available' => ['sometimes', 'boolean'],
-            'image' => ['nullable', 'image', 'max:2048'],
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
 
         $data['is_available'] = $request->boolean('is_available');

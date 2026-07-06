@@ -25,15 +25,41 @@
             <div class="page-shell flex flex-col gap-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:py-5">
                 <div>
                     <p class="text-[11px] font-semibold uppercase tracking-[0.35em] text-amber-400">Hotel Eqi</p>
-                    <a href="{{ route('user.dashboard') }}"
-                        class="font-playfair text-xl font-semibold text-white transition hover:text-amber-300">
-                        Hotel Management System
-                    </a>
-                </div>
-
-                <nav class="flex flex-wrap items-center gap-2 text-sm">
                     @php
-                        $navItems = [
+                        $isAdmin = auth()->check() && auth()->user()->isAdmin();
+                        $dashboardRoute = $isAdmin ? route('admin.dashboard') : route('user.dashboard');
+                        $navItems = $isAdmin ? [
+                            [
+                                'label' => 'Dashboard',
+                                'route' => 'admin.dashboard',
+                                'active' => request()->routeIs('admin.dashboard'),
+                            ],
+                            [
+                                'label' => 'Bookings',
+                                'route' => 'admin.bookings.index',
+                                'active' => request()->routeIs('admin.bookings.*'),
+                            ],
+                            [
+                                'label' => 'Guests',
+                                'route' => 'admin.guests.index',
+                                'active' => request()->routeIs('admin.guests.*'),
+                            ],
+                            [
+                                'label' => 'Room Types',
+                                'route' => 'admin.room-types.index',
+                                'active' => request()->routeIs('admin.room-types.*'),
+                            ],
+                            [
+                                'label' => 'Rooms',
+                                'route' => 'admin.rooms.index',
+                                'active' => request()->routeIs('admin.rooms.*'),
+                            ],
+                            [
+                                'label' => 'Menus',
+                                'route' => 'admin.restaurant-menus.index',
+                                'active' => request()->routeIs('admin.restaurant-menus.*'),
+                            ],
+                        ] : [
                             [
                                 'label' => 'Dashboard',
                                 'route' => 'user.dashboard',
@@ -59,6 +85,13 @@
                         ];
                     @endphp
 
+                    <a href="{{ $dashboardRoute }}"
+                        class="font-playfair text-xl font-semibold text-white transition hover:text-amber-300">
+                        Hotel Management System
+                    </a>
+                </div>
+
+                <nav class="flex flex-wrap items-center gap-2 text-sm">
                     @foreach ($navItems as $item)
                         <a href="{{ route($item['route']) }}"
                             class="rounded-full px-3 py-2 font-medium transition {{ $item['active'] ? 'bg-amber-500/20 text-amber-200' : 'text-stone-200 hover:bg-white/10 hover:text-white' }}">

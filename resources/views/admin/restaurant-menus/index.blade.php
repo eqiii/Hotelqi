@@ -17,7 +17,10 @@
         <tbody>
             @foreach ($menus as $m)
                 <tr>
-                    <td>{{ $m->name }}</td>
+                    <td class="flex items-center gap-3">
+                        <img src="{{ $m->image_url }}" alt="{{ $m->name }}" class="h-12 w-20 rounded-lg object-cover" />
+                        {{ $m->name }}
+                    </td>
                     <td>{{ format_rupiah($m->price) }}</td>
                     <td>
                         <a href="{{ route('admin.restaurant-menus.edit', $m) }}">Edit</a>

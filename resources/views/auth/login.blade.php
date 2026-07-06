@@ -65,6 +65,28 @@
                         placeholder="••••••••">
                 </div>
 
+                <!-- Login As -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Login As</label>
+                    <div class="flex items-center gap-6">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="login_as" value="guest"
+                                {{ old('login_as', 'guest') === 'guest' ? 'checked' : '' }}
+                                class="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-600">Customer</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="login_as" value="admin"
+                                {{ old('login_as') === 'admin' ? 'checked' : '' }}
+                                class="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-600">Staff</span>
+                        </label>
+                    </div>
+                    @error('login_as')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Remember & Forgot -->
                 <div class="flex items-center justify-between">
                     <label class="flex items-center cursor-pointer">

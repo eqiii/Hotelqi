@@ -123,7 +123,7 @@
                                             @endif
 
                                             @if($booking->status === 'confirmed')
-                                                <form action="{{ route('admin.bookings.check-in', $booking) }}" method="POST" class="inline">
+                                                <form action="{{ route('admin.bookings.checkin', $booking) }}" method="POST" class="inline">
                                                     @csrf
                                                     <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-xs transition mr-1">
                                                         Check-In
@@ -132,7 +132,7 @@
                                             @endif
 
                                             @if($booking->status === 'checked_in')
-                                                <form action="{{ route('admin.bookings.check-out', $booking) }}" method="POST" class="inline">
+                                                <form action="{{ route('admin.bookings.checkout', $booking) }}" method="POST" class="inline">
                                                     @csrf
                                                     <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs transition">
                                                         Check-Out

@@ -15,6 +15,7 @@ class Room extends Model
         'room_type_id',
         'room_number',
         'status',
+        'image',
     ];
 
     protected $casts = [
@@ -84,5 +85,18 @@ class Room extends Model
             ->whereIn('status', ['confirmed', 'checked_in'])
             ->latest()
             ->first();
+    }
+
+    public function getImageUrlAttribute(): string
+    {
+        if ($this->image) {
+            return asset('storage/' . $this->image);
+        }
+
+        if ($this->roomType) {
+            return $this->roomType->image_url;
+        }
+
+        return asset('images/default-room.jpg');
     }
 }

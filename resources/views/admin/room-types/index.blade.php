@@ -68,8 +68,10 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach ($roomTypes as $roomType)
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                                            {{ $roomType->name }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 flex items-center gap-3">
+                                            <img src="{{ $roomType->image_url }}" alt="{{ $roomType->name }}" class="h-12 w-20 rounded-lg object-cover" />
+                                            <span>{{ $roomType->name }}</span>
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                             {{ format_rupiah($roomType->base_price) }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">

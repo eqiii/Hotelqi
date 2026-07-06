@@ -74,7 +74,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Foto Tipe Kamar</label>
-                        <input type="file" name="image" class="w-full text-gray-700" />
+                        <input type="file" name="image" accept="image/jpeg,image/png" class="w-full text-gray-700" />
                         @if ($roomType->image)
                             <div class="mt-3">
                                 <img src="{{ asset('storage/' . $roomType->image) }}" alt="{{ $roomType->name }}"

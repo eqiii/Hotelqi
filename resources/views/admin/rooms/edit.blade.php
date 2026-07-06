@@ -3,7 +3,7 @@
 
     <h2 class="font-playfair text-2xl font-bold">Edit Room</h2>
 
-    <form method="POST" action="{{ route('admin.rooms.update', $room) }}" class="mt-4">
+    <form method="POST" action="{{ route('admin.rooms.update', $room) }}" class="mt-4" enctype="multipart/form-data">
         @csrf
         @method('PATCH')
         <div>
@@ -26,6 +26,15 @@
                 <option value="occupied" {{ $room->status == 'occupied' ? 'selected' : '' }}>occupied</option>
                 <option value="maintenance" {{ $room->status == 'maintenance' ? 'selected' : '' }}>maintenance</option>
             </select>
+        </div>
+        <div>
+            <label>Image</label>
+            <input type="file" name="image" accept="image/jpeg,image/png" />
+            @if ($room->image)
+                <div class="mt-3">
+                    <img src="{{ asset('storage/' . $room->image) }}" alt="{{ $room->room_number }}" class="h-32 rounded-lg object-cover" />
+                </div>
+            @endif
         </div>
         <button class="gold-btn mt-3">Save</button>
     </form>

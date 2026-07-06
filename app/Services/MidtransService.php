@@ -47,12 +47,16 @@ class MidtransService
         // Midtrans\Notification expects a stream/filename that contains JSON.
         // If caller passed an array (from a Request), wrap it into a data:// stream.
         if (is_array($payload) && !empty($payload)) {
-            // Build a lightweight object that mimics the properties used by our code
+            // Build a lightweight object that mimics the properties used by our code.
+            // Include signature fields so tests/simulations can verify payloads.
             return (object) [
                 'order_id' => $payload['order_id'] ?? null,
                 'transaction_status' => $payload['transaction_status'] ?? null,
                 'fraud_status' => $payload['fraud_status'] ?? null,
                 'transaction_id' => $payload['transaction_id'] ?? null,
+                'status_code' => $payload['status_code'] ?? null,
+                'gross_amount' => $payload['gross_amount'] ?? null,
+                'signature_key' => $payload['signature_key'] ?? null,
             ];
         }
 
@@ -79,5 +83,28 @@ class MidtransService
                 'finish' => route('payment.finish'),
             ],
         ];
+    }
+
+    /**
+     * Verify that a notification payload was genuinely sent by Midtrans.
+     *
+     * Midtrans signs every notification with:
+     *   sha512(order_id + status_code + gross_amount + ServerKey)
+     */
+    public function verifySignature(object $notification): bool
+    {
+        $orderId = $notification->order_id ?? null;
+        $statusCode = $notification->status_code ?? null;
+        $grossAmount = $notification->gross_amount ?? null;
+        $signatureKey = $notification->signature_key ?? null;
+
+        if (!$orderId || $statusCode === null || $grossAmount === null || !$signatureKey) {
+            return false;
+        }
+
+        $serverKey = config('mdtrans.server_key');
+        $expected = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
+
+        return hash_equals($expected, $signatureKey);
     }
 }

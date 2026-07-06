@@ -45,7 +45,7 @@
                 <!-- Booking Button -->
                 <div class="flex items-center space-x-4">
                     @auth
-                        <a href="{{ route('user.dashboard') }}" class="bg-amber-600 text-white px-6 py-2.5 text-xs tracking-widest uppercase hover:bg-amber-700 transition font-semibold">Dashboard</a>
+                        <a href="{{ route('dashboard') }}" class="bg-amber-600 text-white px-6 py-2.5 text-xs tracking-widest uppercase hover:bg-amber-700 transition font-semibold">Dashboard</a>
                     @else
                         <a href="{{ route('login') }}" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">Login</a>
                         <a href="{{ route('register') }}" class="bg-amber-600 text-white px-6 py-2.5 text-xs tracking-widest uppercase hover:bg-amber-700 transition font-semibold">Booking Online</a>

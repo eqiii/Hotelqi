@@ -1,3 +1,23 @@
+<x-hotel-app-layout>
+    <x-slot name="pageTitle">Guest {{ $guest->user->name ?? '-' }}</x-slot>
+
+    <h2 class="font-playfair text-2xl font-bold">Guest {{ $guest->user->name ?? '-' }}</h2>
+
+    <div class="mt-4">
+        <p>Email: {{ $guest->user->email ?? '-' }}</p>
+        <p>Phone: {{ $guest->phone }}</p>
+        <p>Address: {{ $guest->address }}</p>
+    </div>
+
+    <div class="mt-4">
+        <h3>Bookings</h3>
+        <ul>
+            @foreach($guest->bookings as $b)
+                <li>{{ $b->invoice_number }} - {{ $b->status }}</li>
+            @endforeach
+        </ul>
+    </div>
+</x-hotel-app-layout>
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">

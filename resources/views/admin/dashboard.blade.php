@@ -1,3 +1,26 @@
+<x-hotel-app-layout>
+    <x-slot name="pageTitle">Admin Dashboard</x-slot>
+
+    <h2 class="font-playfair text-2xl font-bold">Admin Dashboard</h2>
+
+    <div class="mt-6">
+        <p>Total Rooms: {{ $totalRooms }}</p>
+        <p>Available Rooms: {{ $availableRooms }}</p>
+        <p>Occupied Rooms: {{ $occupiedRooms }}</p>
+        <p>Total Guests: {{ $totalGuests }}</p>
+        <p>Active Bookings: {{ $activeBookings }}</p>
+        <p>Total Revenue: {{ format_rupiah($totalRevenue) }}</p>
+    </div>
+
+    <div class="mt-6">
+        <h3 class="font-semibold">Latest Bookings</h3>
+        <ul>
+            @foreach($latestBookings as $b)
+                <li>{{ $b->invoice_number }} - {{ $b->guest->user->name ?? '-' }} - {{ $b->status }}</li>
+            @endforeach
+        </ul>
+    </div>
+</x-hotel-app-layout>
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">

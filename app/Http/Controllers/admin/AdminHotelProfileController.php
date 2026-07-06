@@ -28,7 +28,7 @@ class AdminHotelProfileController extends Controller
             'logo'        => ['nullable', 'image', 'max:2048'],
         ]);
 
-        $profile = HotelProfile::getProfile();
+        $profile = HotelProfile::getProfile() ?? new HotelProfile();
 
         if ($request->hasFile('logo')) {
             if ($profile->logo) {
@@ -37,7 +37,7 @@ class AdminHotelProfileController extends Controller
             $data['logo'] = $request->file('logo')->store('hotel', 'public');
         }
 
-        $profile->update($data);
+        $profile = HotelProfile::updateOrCreateProfile($data);
 
         return redirect()->route('admin.hotel-profile.edit')
             ->with('status', 'Profil hotel berhasil diperbarui.');

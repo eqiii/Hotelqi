@@ -11,22 +11,26 @@
                 </div>
                 <div>
                     <span
-                        class="inline-flex px-4 py-2 rounded-full text-sm font-semibold {{ $restaurantOrder->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' }}">
-                        {{ ucfirst($restaurantOrder->status) }}
+                        class="inline-flex px-4 py-2 rounded-full text-sm font-semibold {{ $restaurantOrder->order_status === 'confirmed' ? 'bg-blue-100 text-blue-800' : ($restaurantOrder->order_status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800') }}">
+                        {{ str_replace('_', ' ', ucfirst($restaurantOrder->order_status)) }}
                     </span>
                 </div>
             </div>
 
             <div class="space-y-6">
                 <div class="rounded-3xl border border-gray-200 p-6 bg-gray-50">
-                    <p class="text-sm font-semibold text-gray-900">Detail Booking Terkait</p>
-                    <p class="mt-2 text-sm text-gray-600">
-                        {{ $restaurantOrder->booking ? $restaurantOrder->booking->invoice_number : 'Tidak terkait dengan booking' }}
-                    </p>
+                    <p class="text-sm font-semibold text-gray-900">Detail Pesanan</p>
+                    <p class="mt-2 text-sm text-gray-600">Invoice: {{ $restaurantOrder->invoice_number }}</p>
+                    <p class="text-sm text-gray-600">Serving: {{ $restaurantOrder->serve_type === 'scheduled' ? 'Scheduled' : 'Now' }}</p>
+                    <p class="text-sm text-gray-600">Dining: {{ $restaurantOrder->dining_type === 'room_service' ? 'Room Service' : 'Eat at Restaurant' }}</p>
+                    @if ($restaurantOrder->guest_name)
+                        <p class="text-sm text-gray-600">Guest Name: {{ $restaurantOrder->guest_name }}</p>
+                    @endif
+                    @if ($restaurantOrder->room_number)
+                        <p class="text-sm text-gray-600">Room Number: {{ $restaurantOrder->room_number }}</p>
+                    @endif
                     @if ($restaurantOrder->booking)
-                        <p class="text-sm text-gray-600">Kamar:
-                            {{ $restaurantOrder->booking->room->roomType->name }}
-                            ({{ $restaurantOrder->booking->room->room_number }})</p>
+                        <p class="text-sm text-gray-600">Booking: {{ $restaurantOrder->booking->invoice_number }}</p>
                     @endif
                 </div>
 
@@ -49,9 +53,16 @@
 
                 <div class="rounded-3xl border border-gray-200 p-6 bg-gray-50">
                     <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Subtotal</span>
+                        <span class="text-gray-900 font-semibold">{{ format_rupiah($restaurantOrder->subtotal) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-3">
+                        <span class="text-gray-600">Tax</span>
+                        <span class="text-gray-900 font-semibold">{{ format_rupiah($restaurantOrder->tax) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-3">
                         <span class="text-gray-600">Total Bayar</span>
-                        <span
-                            class="text-amber-600 font-bold text-xl">{{ format_rupiah($restaurantOrder->total_price) }}</span>
+                        <span class="text-amber-600 font-bold text-xl">{{ format_rupiah($restaurantOrder->total) }}</span>
                     </div>
                 </div>
             </div>

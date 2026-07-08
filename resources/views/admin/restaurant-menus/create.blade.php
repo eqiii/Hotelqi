@@ -22,6 +22,14 @@
             <textarea name="description"></textarea>
         </div>
         <div>
+            <label>Stock Quantity</label>
+            <input name="stock_quantity" type="number" min="0" value="0" />
+        </div>
+        <div>
+            <label>Available</label>
+            <input type="checkbox" name="is_available" value="1" checked />
+        </div>
+        <div>
             <label>Image</label>
             <input type="file" name="image" accept="image/jpeg,image/png" />
         </div>

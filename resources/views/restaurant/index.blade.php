@@ -16,22 +16,28 @@
                                 {{ $category }}</div>
                             <div class="p-6 space-y-6">
                                 @foreach ($items as $menu)
-                                    <div
-                                        class="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-4 items-center border-b border-gray-100 pb-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-4 items-center border-b border-gray-100 pb-4">
                                         <div class="w-full md:w-28 h-24 rounded-xl overflow-hidden bg-gray-100">
-                                            <img src="{{ $menu->image_url }}" alt="{{ $menu->name }}"
-                                                class="w-full h-full object-cover">
+                                            <img src="{{ $menu->image_url }}" alt="{{ $menu->name }}" class="w-full h-full object-cover">
                                         </div>
                                         <div>
                                             <h3 class="text-lg font-semibold text-gray-900">{{ $menu->name }}</h3>
-                                            <p class="text-sm text-gray-600 mt-1">
-                                                {{ Str::limit($menu->description, 110) }}</p>
-                                            <p class="mt-2 text-amber-600 font-semibold">
-                                                {{ format_rupiah($menu->price) }}</p>
+                                            <p class="text-sm text-gray-600 mt-1">{{ Str::limit($menu->description, 110) }}</p>
+                                            <p class="mt-2 text-amber-600 font-semibold">{{ format_rupiah($menu->price) }}</p>
+                                            <p class="mt-1 text-xs text-gray-500">{{ $menu->stock_quantity ? 'Stok: ' . $menu->stock_quantity : 'Stok tidak dibatasi' }}</p>
                                         </div>
-                                        <div class="text-right">
-                                            <span
-                                                class="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs">Tersedia</span>
+                                        <div class="text-right space-y-3">
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full {{ $menu->is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' }} text-xs">
+                                                {{ $menu->is_available ? 'Tersedia' : 'Tidak Tersedia' }}
+                                            </span>
+                                            @auth
+                                                <form action="{{ route('user.restaurant.cart.add') }}" method="POST" class="flex items-center gap-2 justify-end">
+                                                    @csrf
+                                                    <input type="hidden" name="menu_id" value="{{ $menu->id }}">
+                                                    <input type="number" name="quantity" min="1" max="10" value="1" class="w-16 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-600 focus:ring-amber-600">
+                                                    <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">Tambah</button>
+                                                </form>
+                                            @endauth
                                         </div>
                                     </div>
                                 @endforeach
@@ -40,63 +46,41 @@
                     @endforeach
                 </div>
 
-                <div class="bg-white rounded-3xl shadow border border-gray-100 p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Pesan Sekarang</h2>
+                <div class="bg-white rounded-3xl shadow border border-gray-100 p-6 h-fit sticky top-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-gray-900">Keranjang</h2>
+                        <a href="{{ route('user.restaurant.cart') }}" class="text-sm font-semibold text-amber-600">Lihat</a>
+                    </div>
 
-                    @auth
-                        <form action="{{ route('user.restaurant.order.store') }}" method="POST" class="space-y-4">
-                            @csrf
-                            <div class="space-y-4">
-                                @foreach ($menus->flatten() as $menu)
-                                    <div class="grid grid-cols-12 gap-3 items-center rounded-xl border border-gray-200 p-3">
-                                        <div class="col-span-7">
-                                            <label class="font-medium text-gray-800">{{ $menu->name }}</label>
-                                            <p class="text-xs text-gray-500">{{ format_rupiah($menu->price) }}</p>
+                    @php $cart = session('restaurant_cart', []); @endphp
+                    @if (!empty($cart))
+                        <div class="space-y-3">
+                            @foreach ($cart as $item)
+                                @php $menu = $menus->flatten()->firstWhere('id', $item['menu_id']); @endphp
+                                @if ($menu)
+                                    <div class="rounded-xl border border-gray-200 p-3">
+                                        <div class="flex items-center justify-between">
+                                            <p class="font-semibold text-gray-900">{{ $menu->name }}</p>
+                                            <span class="text-sm text-gray-600">{{ format_rupiah(($item['price'] ?? 0) * ($item['quantity'] ?? 0)) }}</span>
                                         </div>
-                                        <div class="col-span-5 text-right">
-                                            <input type="hidden" name="menu_id[]" value="{{ $menu->id }}">
-                                            <input type="number" name="quantity[]" min="0" value="0"
-                                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-600 focus:ring-amber-600" />
-                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">Qty: {{ $item['quantity'] ?? 0 }}</p>
                                     </div>
-                                @endforeach
-                            </div>
-
-                            @if ($bookings->isNotEmpty())
-                                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                                    <p class="text-sm font-semibold text-amber-800 mb-3">Pilih Booking untuk dikaitkan</p>
-                                    <select name="booking_id"
-                                        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-amber-600 focus:ring-amber-600">
-                                        <option value="">Tidak ada</option>
-                                        @foreach ($bookings as $booking)
-                                            <option value="{{ $booking->id }}">{{ $booking->invoice_number }} •
-                                                {{ $booking->room->roomType->name }} •
-                                                {{ $booking->check_in->format('d M Y') }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            @endif
-
-                            <div class="pt-4">
-                                <button type="submit"
-                                    class="w-full bg-amber-600 hover:bg-amber-700 text-white uppercase tracking-widest font-semibold py-3 rounded-xl transition">Buat
-                                    Pesanan</button>
-                            </div>
-                        </form>
-                    @else
-                        <div class="rounded-3xl border border-amber-200 bg-amber-50 p-6 text-center">
-                            <p class="text-gray-700 font-semibold mb-4">Silakan login terlebih dahulu untuk memesan menu
-                                restoran.</p>
-                            <a href="{{ route('login') }}"
-                                class="inline-flex bg-amber-600 hover:bg-amber-700 text-white uppercase tracking-widest font-semibold py-3 px-6 rounded-xl transition">Login</a>
+                                @endif
+                            @endforeach
                         </div>
-                    @endauth
+                        <div class="mt-6 border-t border-gray-200 pt-4">
+                            <a href="{{ route('user.restaurant.checkout') }}" class="block w-full bg-amber-600 hover:bg-amber-700 text-white text-center uppercase tracking-widest font-semibold py-3 rounded-xl transition">Checkout</a>
+                        </div>
+                    @else
+                        <div class="rounded-3xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+                            Keranjang Anda masih kosong.
+                        </div>
+                    @endif
                 </div>
             </div>
 
             <div class="text-center text-sm text-gray-500">
-                <p>Semua pesanan restoran akan diproses oleh tim layanan kami. Kami akan mengirimkan konfirmasi segera
-                    setelah pesanan dikonfirmasi.</p>
+                <p>Semua pesanan restoran akan diproses oleh tim layanan kami. Kami akan mengirimkan konfirmasi segera setelah pesanan dikonfirmasi.</p>
             </div>
         </div>
     </section>

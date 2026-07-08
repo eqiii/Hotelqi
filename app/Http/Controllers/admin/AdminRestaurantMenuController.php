@@ -29,6 +29,7 @@ class AdminRestaurantMenuController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
             'category' => ['nullable', 'string', 'max:100'],
             'is_available' => ['sometimes', 'boolean'],
+            'stock_quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
 
@@ -57,6 +58,7 @@ class AdminRestaurantMenuController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
             'category' => ['nullable', 'string', 'max:100'],
             'is_available' => ['sometimes', 'boolean'],
+            'stock_quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'max:2048'],
         ]);
 

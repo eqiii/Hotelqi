@@ -17,11 +17,13 @@ class RestaurantMenu extends Model
         'category',
         'image',
         'is_available',
+        'stock_quantity',
     ];
 
     protected $casts = [
-        'price'        => 'decimal:2',
-        'is_available' => 'boolean',
+        'price'          => 'decimal:2',
+        'is_available'   => 'boolean',
+        'stock_quantity' => 'integer',
     ];
 
     // ==================== RELATIONS ====================

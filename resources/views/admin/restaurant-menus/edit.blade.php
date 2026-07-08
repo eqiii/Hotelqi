@@ -23,6 +23,14 @@
             <textarea name="description">{{ old('description', $restaurantMenu->description) }}</textarea>
         </div>
         <div>
+            <label>Stock Quantity</label>
+            <input name="stock_quantity" value="{{ old('stock_quantity', $restaurantMenu->stock_quantity ?? 0) }}" type="number" min="0" />
+        </div>
+        <div>
+            <label>Available</label>
+            <input type="checkbox" name="is_available" value="1" {{ old('is_available', $restaurantMenu->is_available) ? 'checked' : '' }} />
+        </div>
+        <div>
             <label>Image</label>
             <input type="file" name="image" accept="image/jpeg,image/png" />
             @if ($restaurantMenu->image)

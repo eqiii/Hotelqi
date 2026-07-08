@@ -12,7 +12,7 @@ return new class extends Migration {
             $table->foreignId('guest_id')->constrained()->cascadeOnDelete();
             $table->foreignId('booking_id')->nullable()->constrained()->nullOnDelete(); // Opsional, jika pesan dari kamar
             $table->decimal('total_price', 12, 2);
-            $table->enum('status', ['pending', 'preparing', 'delivered', 'cancelled'])->default('pending');
+            $table->enum('status', ['pending', 'preparing', 'delivered', 'cancelled', 'paid', 'confirmed'])->default('pending');
             $table->timestamps();
         });
     }

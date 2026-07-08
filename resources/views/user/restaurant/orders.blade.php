@@ -17,26 +17,28 @@
                             </div>
                             <div>
                                 <span
-                                    class="inline-flex px-3 py-1 rounded-full text-xs font-semibold {{ $order->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' }}">
-                                    {{ ucfirst($order->status) }}
+                                    class="inline-flex px-3 py-1 rounded-full text-xs font-semibold {{ $order->order_status === 'confirmed' ? 'bg-blue-100 text-blue-800' : ($order->order_status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800') }}">
+                                    {{ str_replace('_', ' ', ucfirst($order->order_status)) }}
                                 </span>
                             </div>
                         </div>
 
-                        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                            <div>
+                                <p class="font-medium text-gray-900">Invoice</p>
+                                <p class="mt-1">{{ $order->invoice_number }}</p>
+                            </div>
                             <div>
                                 <p class="font-medium text-gray-900">Total Harga</p>
-                                <p class="mt-1">{{ format_rupiah($order->total_price) }}</p>
+                                <p class="mt-1">{{ format_rupiah($order->total) }}</p>
                             </div>
                             <div>
-                                <p class="font-medium text-gray-900">Booking Terkait</p>
-                                <p class="mt-1">
-                                    {{ $order->booking ? $order->booking->invoice_number : 'Tidak terkait' }}
-                                </p>
+                                <p class="font-medium text-gray-900">Serving</p>
+                                <p class="mt-1">{{ $order->serve_type === 'scheduled' ? 'Scheduled' : 'Now' }}</p>
                             </div>
                             <div>
-                                <p class="font-medium text-gray-900">Tanggal</p>
-                                <p class="mt-1">{{ $order->created_at->format('d M Y') }}</p>
+                                <p class="font-medium text-gray-900">Dining</p>
+                                <p class="mt-1">{{ $order->dining_type === 'room_service' ? 'Room Service' : 'Eat at Restaurant' }}</p>
                             </div>
                         </div>
 

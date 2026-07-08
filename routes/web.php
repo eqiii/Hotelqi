@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\AdminGuestController;
 use App\Http\Controllers\Admin\AdminRoomController;
 use App\Http\Controllers\Admin\AdminRoomTypeController;
 use App\Http\Controllers\Admin\AdminRestaurantMenuController;
+use App\Http\Controllers\Admin\AdminRestaurantOrderController;
 use App\Http\Controllers\Admin\AdminHotelProfileController;
 use App\Http\Controllers\Manager\ManagerDashboardController;
 use App\Http\Controllers\Manager\ManagerFinanceController;
@@ -95,6 +96,19 @@ Route::middleware(['auth'])->group(function () {
             default   => redirect()->route('user.dashboard'),
         };
     })->name('dashboard');
+
+    Route::post('/restaurant/cart/add', [RestaurantController::class, 'addToCart'])->name('restaurant.cart.add');
+    Route::get('/restaurant/cart', [RestaurantController::class, 'cart'])->name('restaurant.cart');
+    Route::post('/restaurant/cart/update', [RestaurantController::class, 'updateCart'])->name('restaurant.cart.update');
+    Route::delete('/restaurant/cart/remove/{menuId}', [RestaurantController::class, 'removeFromCart'])->name('restaurant.cart.remove');
+    Route::get('/restaurant/checkout', [RestaurantController::class, 'checkout'])->name('restaurant.checkout');
+    Route::post('/restaurant/checkout', [RestaurantController::class, 'storeCheckout'])->name('restaurant.checkout.store');
+    Route::get('/restaurant/payment', [RestaurantController::class, 'payment'])->name('restaurant.payment');
+    Route::get('/restaurant/payment/finish', [RestaurantController::class, 'paymentFinish'])->name('restaurant.payment.finish');
+    Route::post('/restaurant/order', [RestaurantController::class, 'store'])->name('restaurant.order.store');
+    Route::get('/restaurant/orders', [RestaurantController::class, 'orders'])->name('restaurant.orders');
+    Route::get('/restaurant/orders/{restaurantOrder}', [RestaurantController::class, 'show'])->name('restaurant.orders.show');
+    Route::get('/restaurant/orders/{restaurantOrder}/invoice', [RestaurantController::class, 'invoice'])->name('restaurant.orders.invoice');
 });
 
 // ==================== USER / GUEST AREA ====================
@@ -113,9 +127,18 @@ Route::middleware(['auth', 'verified', 'role:guest'])->prefix('user')->name('use
     Route::get('/booking/{booking}/payment', [BookingController::class, 'payment'])->name('booking.payment');
     Route::get('/booking/history', [BookingController::class, 'history'])->name('booking.history');
 
+    Route::post('/restaurant/cart/add', [RestaurantController::class, 'addToCart'])->name('restaurant.cart.add');
+    Route::get('/restaurant/cart', [RestaurantController::class, 'cart'])->name('restaurant.cart');
+    Route::post('/restaurant/cart/update', [RestaurantController::class, 'updateCart'])->name('restaurant.cart.update');
+    Route::delete('/restaurant/cart/remove/{menuId}', [RestaurantController::class, 'removeFromCart'])->name('restaurant.cart.remove');
+    Route::get('/restaurant/checkout', [RestaurantController::class, 'checkout'])->name('restaurant.checkout');
+    Route::post('/restaurant/checkout', [RestaurantController::class, 'storeCheckout'])->name('restaurant.checkout.store');
+    Route::get('/restaurant/payment', [RestaurantController::class, 'payment'])->name('restaurant.payment');
+    Route::get('/restaurant/payment/finish', [RestaurantController::class, 'paymentFinish'])->name('restaurant.payment.finish');
     Route::post('/restaurant/order', [RestaurantController::class, 'store'])->name('restaurant.order.store');
     Route::get('/restaurant/orders', [RestaurantController::class, 'orders'])->name('restaurant.orders');
     Route::get('/restaurant/orders/{restaurantOrder}', [RestaurantController::class, 'show'])->name('restaurant.orders.show');
+    Route::get('/restaurant/orders/{restaurantOrder}/invoice', [RestaurantController::class, 'invoice'])->name('restaurant.orders.invoice');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -149,6 +172,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     // Restaurant Menus
     Route::resource('restaurant-menus', AdminRestaurantMenuController::class)->except(['show']);
+    Route::get('restaurant-orders', [AdminRestaurantOrderController::class, 'index'])->name('restaurant-orders.index');
+    Route::get('restaurant-orders/{restaurantOrder}', [AdminRestaurantOrderController::class, 'show'])->name('restaurant-orders.show');
+    Route::patch('restaurant-orders/{restaurantOrder}/status', [AdminRestaurantOrderController::class, 'updateStatus'])->name('restaurant-orders.update-status');
 
     // Hotel Profile
     Route::get('/hotel-profile', [AdminHotelProfileController::class, 'edit'])->name('hotel-profile.edit');

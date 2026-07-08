@@ -31,7 +31,7 @@
                                                 {{ $menu->is_available ? 'Tersedia' : 'Tidak Tersedia' }}
                                             </span>
                                             @auth
-                                                <form action="{{ route('user.restaurant.cart.add') }}" method="POST" class="flex items-center gap-2 justify-end">
+                                                <form action="{{ route('user.restaurant.cart.add') }}" method="POST" class="restaurant-add-to-cart-form flex items-center gap-2 justify-end">
                                                     @csrf
                                                     <input type="hidden" name="menu_id" value="{{ $menu->id }}">
                                                     <input type="number" name="quantity" min="1" max="10" value="1" class="w-16 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-600 focus:ring-amber-600">
@@ -52,30 +52,32 @@
                         <a href="{{ route('user.restaurant.cart') }}" class="text-sm font-semibold text-amber-600">Lihat</a>
                     </div>
 
-                    @php $cart = session('restaurant_cart', []); @endphp
-                    @if (!empty($cart))
-                        <div class="space-y-3">
-                            @foreach ($cart as $item)
-                                @php $menu = $menus->flatten()->firstWhere('id', $item['menu_id']); @endphp
-                                @if ($menu)
-                                    <div class="rounded-xl border border-gray-200 p-3">
-                                        <div class="flex items-center justify-between">
-                                            <p class="font-semibold text-gray-900">{{ $menu->name }}</p>
-                                            <span class="text-sm text-gray-600">{{ format_rupiah(($item['price'] ?? 0) * ($item['quantity'] ?? 0)) }}</span>
+                    <div id="restaurant-cart-content">
+                        @php $cart = session('restaurant_cart', []); @endphp
+                        @if (!empty($cart))
+                            <div class="space-y-3">
+                                @foreach ($cart as $item)
+                                    @php $menu = $menus->flatten()->firstWhere('id', $item['menu_id']); @endphp
+                                    @if ($menu)
+                                        <div class="rounded-xl border border-gray-200 p-3">
+                                            <div class="flex items-center justify-between">
+                                                <p class="font-semibold text-gray-900">{{ $menu->name }}</p>
+                                                <span class="text-sm text-gray-600">{{ format_rupiah(($item['price'] ?? 0) * ($item['quantity'] ?? 0)) }}</span>
+                                            </div>
+                                            <p class="text-sm text-gray-500 mt-1">Qty: {{ $item['quantity'] ?? 0 }}</p>
                                         </div>
-                                        <p class="text-sm text-gray-500 mt-1">Qty: {{ $item['quantity'] ?? 0 }}</p>
-                                    </div>
-                                @endif
-                            @endforeach
-                        </div>
-                        <div class="mt-6 border-t border-gray-200 pt-4">
-                            <a href="{{ route('user.restaurant.checkout') }}" class="block w-full bg-amber-600 hover:bg-amber-700 text-white text-center uppercase tracking-widest font-semibold py-3 rounded-xl transition">Checkout</a>
-                        </div>
-                    @else
-                        <div class="rounded-3xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
-                            Keranjang Anda masih kosong.
-                        </div>
-                    @endif
+                                    @endif
+                                @endforeach
+                            </div>
+                            <div class="mt-6 border-t border-gray-200 pt-4">
+                                <a href="{{ route('user.restaurant.checkout') }}" class="block w-full bg-amber-600 hover:bg-amber-700 text-white text-center uppercase tracking-widest font-semibold py-3 rounded-xl transition">Checkout</a>
+                            </div>
+                        @else
+                            <div class="rounded-3xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+                                Keranjang Anda masih kosong.
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
 
@@ -84,4 +86,126 @@
             </div>
         </div>
     </section>
+
+    <div id="restaurant-toast" class="fixed right-4 bottom-4 z-50 hidden rounded-2xl px-4 py-3 shadow-xl bg-emerald-600 text-white text-sm font-medium"></div>
+
+    <script>
+        (function () {
+            const cartContent = document.querySelector('#restaurant-cart-content');
+            const addToCartForms = document.querySelectorAll('.restaurant-add-to-cart-form');
+            const menuData = @json($menus->flatten()->mapWithKeys(fn($menu) => [$menu->id => ['name' => $menu->name, 'price' => (float) $menu->price]])->all());
+            const toast = document.querySelector('#restaurant-toast');
+
+            function formatRupiah(value) {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0,
+                }).format(value);
+            }
+
+            function escapeHtml(value) {
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function showToast(message) {
+                if (!toast) {
+                    alert(message);
+                    return;
+                }
+                toast.textContent = message;
+                toast.classList.remove('hidden', 'opacity-0');
+                toast.classList.add('opacity-100');
+                clearTimeout(window.restaurantCartToastTimeout);
+                window.restaurantCartToastTimeout = setTimeout(() => {
+                    toast.classList.add('opacity-0');
+                    toast.addEventListener('transitionend', () => toast.classList.add('hidden'), { once: true });
+                }, 2400);
+            }
+
+            function renderCart(cart) {
+                if (!cart || Object.keys(cart).length === 0) {
+                    cartContent.innerHTML = `
+                        <div class="rounded-3xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+                            Keranjang Anda masih kosong.
+                        </div>
+                    `;
+                    return;
+                }
+
+                const itemsHtml = Object.values(cart).map(item => {
+                    const menu = menuData[item.menu_id] || {};
+                    const name = escapeHtml(menu.name || item.name || 'Menu tidak ditemukan');
+                    const price = Number(menu.price ?? item.price ?? 0);
+                    const total = formatRupiah(price * Number(item.quantity ?? 0));
+                    return `
+                        <div class="rounded-xl border border-gray-200 p-3">
+                            <div class="flex items-center justify-between">
+                                <p class="font-semibold text-gray-900">${name}</p>
+                                <span class="text-sm text-gray-600">${total}</span>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-1">Qty: ${Number(item.quantity ?? 0)}</p>
+                        </div>
+                    `;
+                }).join('');
+
+                cartContent.innerHTML = `
+                    <div class="space-y-3">
+                        ${itemsHtml}
+                    </div>
+                    <div class="mt-6 border-t border-gray-200 pt-4">
+                        <a href="{{ route('user.restaurant.checkout') }}" class="block w-full bg-amber-600 hover:bg-amber-700 text-white text-center uppercase tracking-widest font-semibold py-3 rounded-xl transition">Checkout</a>
+                    </div>
+                `;
+            }
+
+            function submitAddToCart(form) {
+                const formData = new FormData(form);
+                const body = new URLSearchParams();
+                for (const [key, value] of formData.entries()) {
+                    body.append(key, value);
+                }
+
+                fetch(form.action, {
+                    method: form.method || 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    },
+                    body: body.toString(),
+                    credentials: 'same-origin',
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (!data || data.success !== true) {
+                            throw new Error('Response indicates failure');
+                        }
+
+                        renderCart(data.cart || {});
+                        showToast('Menu berhasil ditambahkan.');
+                    })
+                    .catch(() => {
+                        alert('Gagal menambahkan menu. Silakan coba lagi.');
+                    });
+            }
+
+            addToCartForms.forEach(form => {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    submitAddToCart(form);
+                });
+            });
+        })();
+    </script>
 </x-guest-layout>

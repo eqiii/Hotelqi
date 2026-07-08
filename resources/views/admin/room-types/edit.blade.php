@@ -25,6 +25,11 @@
         <div>
             <label>Image</label>
             <input type="file" name="image" />
+            @if ($roomType->image)
+                <div class="mt-3">
+                    <img src="{{ asset('storage/' . $roomType->image) }}" alt="{{ $roomType->name }}" class="h-32 rounded-lg object-cover" />
+                </div>
+            @endif
         </div>
         <button class="gold-btn mt-3">Save</button>
     </form>

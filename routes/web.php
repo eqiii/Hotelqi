@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\AdminRoomTypeController;
 use App\Http\Controllers\Admin\AdminRestaurantMenuController;
 use App\Http\Controllers\Admin\AdminRestaurantOrderController;
 use App\Http\Controllers\Admin\AdminHotelProfileController;
+use App\Http\Controllers\Admin\AdminFacilityController;
 use App\Http\Controllers\Manager\ManagerDashboardController;
 use App\Http\Controllers\Manager\ManagerFinanceController;
 use Illuminate\Support\Facades\Route;
@@ -169,6 +170,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     // Rooms & Room Types
     Route::resource('room-types', AdminRoomTypeController::class)->except(['show']);
     Route::resource('rooms', AdminRoomController::class)->except(['show']);
+    Route::resource('facilities', AdminFacilityController::class)->except(['show']);
 
     // Restaurant Menus
     Route::resource('restaurant-menus', AdminRestaurantMenuController::class)->except(['show']);

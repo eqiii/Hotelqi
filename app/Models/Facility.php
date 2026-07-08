@@ -14,7 +14,18 @@ class Facility extends Model
         'name',
         'description',
         'icon',
+        'image',
     ];
+
+    // ==================== ACCESSORS ====================
+
+    public function getImageUrlAttribute(): string
+    {
+        if ($this->image) {
+            return asset('storage/' . $this->image);
+        }
+        return asset('images/default-facility.jpg');
+    }
 
     // ==================== RELATIONS ====================
 

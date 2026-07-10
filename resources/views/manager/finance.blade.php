@@ -65,9 +65,9 @@
     </div>
 
     {{-- ── Summary Cards ──────────────────────────────────────────── --}}
-    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:col-span-1">
             <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Total Revenue</p>
             <p class="text-lg font-bold text-gray-800">{{ format_rupiah($totalRevenue) }}</p>
         </div>
@@ -96,6 +96,13 @@
             <p class="text-xs text-gray-400 mt-0.5">{{ $refundedCount }} transaksi</p>
         </div>
 
+        {{-- Restaurant Revenue Card --}}
+        <div class="bg-white rounded-xl shadow-sm border border-amber-100 p-5">
+            <p class="text-xs text-amber-600 font-semibold uppercase tracking-wide mb-1">🍽️ Restoran</p>
+            <p class="text-lg font-bold text-gray-800">{{ format_rupiah($restaurantRevenue) }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ $restaurantOrderCount }} pesanan</p>
+        </div>
+
     </div>
 
     {{-- ── Revenue Charts ─────────────────────────────────────────── --}}
@@ -115,10 +122,10 @@
 
     </div>
 
-    {{-- ── Detail Transaksi ─────────────────────────────────────── --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    {{-- ── Detail Transaksi (Booking) ─────────────────────────────── --}}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 class="text-base font-bold text-gray-800">Detail Transaksi</h3>
+            <h3 class="text-base font-bold text-gray-800">Detail Transaksi Kamar</h3>
             <span class="text-xs text-gray-400">{{ $transactions->total() }} transaksi ditemukan</span>
         </div>
 
@@ -193,7 +200,75 @@
         @endif
     </div>
 
+    {{-- ── Detail Pesanan Restoran ───────────────────────────────────── --}}
+    <div class="bg-white rounded-xl shadow-sm border border-amber-100 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-amber-100 flex items-center justify-between bg-amber-50/40">
+            <h3 class="text-base font-bold text-gray-800">🍽️ Pesanan Restoran (Berbayar)</h3>
+            <span class="text-xs text-gray-400">{{ $restaurantOrderCount }} pesanan ditemukan</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tanggal</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tamu</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipe</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kamar / Nama</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Metode</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                        <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    @forelse ($restaurantOrders as $i => $rOrder)
+                        <tr class="hover:bg-amber-50/30 transition">
+                            <td class="px-4 py-3 text-gray-400">{{ $i + 1 }}</td>
+                            <td class="px-4 py-3 text-gray-600">{{ optional($rOrder->paid_at)->format('d M Y H:i') ?? '-' }}</td>
+                            <td class="px-4 py-3 font-mono text-xs text-amber-600">{{ $rOrder->invoice_number }}</td>
+                            <td class="px-4 py-3 font-semibold text-gray-800">{{ $rOrder->guest?->user?->name ?? '-' }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ $rOrder->dining_type === 'room_service' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700' }}">
+                                    {{ $rOrder->dining_type === 'room_service' ? '🛎️ Room Service' : '🍽️ Dine In' }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-gray-600">
+                                {{ $rOrder->room_number ?? $rOrder->guest_name ?? '-' }}
+                            </td>
+                            <td class="px-4 py-3 text-gray-600 capitalize">{{ str_replace('_', ' ', $rOrder->payment_method ?? '-') }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                    {{ ucfirst($rOrder->order_status) }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-right font-semibold text-amber-700">
+                                {{ format_rupiah($rOrder->total) }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="9" class="px-4 py-10 text-center text-gray-400">
+                                Tidak ada pesanan restoran ditemukan untuk periode ini.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+                @if ($restaurantOrders->isNotEmpty())
+                    <tfoot class="bg-amber-50/50">
+                        <tr>
+                            <td colspan="8" class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Total Pendapatan Restoran:</td>
+                            <td class="px-4 py-3 text-right font-bold text-amber-700">{{ format_rupiah($restaurantRevenue) }}</td>
+                        </tr>
+                    </tfoot>
+                @endif
+            </table>
+        </div>
+    </div>
+
 </div>
+
 
 {{-- Chart.js CDN --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

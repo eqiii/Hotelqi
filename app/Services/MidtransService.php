@@ -68,7 +68,7 @@ class MidtransService
     /**
      * Membuat parameter untuk Snap Midtrans
      */
-    public function buildSnapParams(string $orderId, int $amount, string $customerName, string $customerEmail): array
+    public function buildSnapParams(string $orderId, int $amount, string $customerName, string $customerEmail, ?string $finishUrl = null): array
     {
         return [
             'transaction_details' => [
@@ -80,7 +80,7 @@ class MidtransService
                 'email'      => $customerEmail,
             ],
             'callbacks' => [
-                'finish' => route('payment.finish'),
+                'finish' => $finishUrl ?? route('payment.finish'),
             ],
         ];
     }

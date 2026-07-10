@@ -1,4 +1,4 @@
-   <x-guest-layout title="Restaurant Menu">
+<x-guest-layout title="Restaurant Menu">
     <section class="bg-gray-900 text-white py-24 text-center">
         <p class="text-amber-400 text-sm tracking-[0.3em] uppercase mb-4 font-semibold">Restaurant</p>
         <h1 class="font-playfair text-5xl font-bold">Culinary Delights</h1>
@@ -49,7 +49,7 @@
                 <div class="bg-white rounded-3xl shadow border border-gray-100 p-6 h-fit sticky top-6">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xl font-semibold text-gray-900">Keranjang</h2>
-                        <a href="{{ route('user.restaurant.cart') }}" class="text-sm font-semibold text-amber-600">Lihat</a>
+                        <span id="cart-count-badge" class="text-sm font-semibold text-amber-600">{{ array_sum(array_column(session('restaurant_cart', []), 'quantity')) > 0 ? array_sum(array_column(session('restaurant_cart', []), 'quantity')) . ' item' : '' }}</span>
                     </div>
 
                     <div id="restaurant-cart-content">
@@ -59,17 +59,34 @@
                                 @foreach ($cart as $item)
                                     @php $menu = $menus->flatten()->firstWhere('id', $item['menu_id']); @endphp
                                     @if ($menu)
-                                        <div class="rounded-xl border border-gray-200 p-3">
-                                            <div class="flex items-center justify-between">
-                                                <p class="font-semibold text-gray-900">{{ $menu->name }}</p>
-                                                <span class="text-sm text-gray-600">{{ format_rupiah(($item['price'] ?? 0) * ($item['quantity'] ?? 0)) }}</span>
+                                        <div class="rounded-xl border border-gray-200 p-3 cart-item" data-menu-id="{{ $menu->id }}">
+                                            <div class="flex items-start justify-between mb-2">
+                                                <p class="font-semibold text-gray-900 text-sm">{{ $menu->name }}</p>
+                                                <span class="text-sm font-semibold text-gray-900 cart-item-subtotal">{{ format_rupiah(($item['price'] ?? 0) * ($item['quantity'] ?? 0)) }}</span>
                                             </div>
-                                            <p class="text-sm text-gray-500 mt-1">Qty: {{ $item['quantity'] ?? 0 }}</p>
+                                            <div class="flex items-center justify-between mt-2">
+                                                <div class="flex items-center gap-2">
+                                                    <button type="button" class="cart-qty-minus w-8 h-8 rounded-full border border-gray-300 text-gray-500 hover:bg-gray-100 flex items-center justify-center font-bold text-lg leading-none transition">−</button>
+                                                    <span class="cart-qty-value w-8 text-center font-semibold text-gray-900 text-sm">{{ $item['quantity'] ?? 0 }}</span>
+                                                    <button type="button" class="cart-qty-plus w-8 h-8 rounded-full border border-amber-500 text-amber-600 hover:bg-amber-50 flex items-center justify-center font-bold text-lg leading-none transition">+</button>
+                                                </div>
+                                                <button type="button" class="cart-item-remove text-xs font-medium text-red-500 hover:text-red-700 hover:underline transition flex items-center gap-1">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                    Hapus
+                                                </button>
+                                            </div>
                                         </div>
                                     @endif
                                 @endforeach
                             </div>
-                            <div class="mt-6 border-t border-gray-200 pt-4">
+                            @php
+                                $cartTotal = collect($cart)->sum(fn($item) => ($item['price'] ?? 0) * ($item['quantity'] ?? 0));
+                            @endphp
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-sm font-semibold text-gray-700">Total</span>
+                                    <span id="cart-grand-total" class="text-lg font-bold text-gray-900">{{ format_rupiah($cartTotal) }}</span>
+                                </div>
                                 <a href="{{ route('user.restaurant.checkout') }}" class="block w-full bg-amber-600 hover:bg-amber-700 text-white text-center uppercase tracking-widest font-semibold py-3 rounded-xl transition">Checkout</a>
                             </div>
                         @else
@@ -92,9 +109,14 @@
     <script>
         (function () {
             const cartContent = document.querySelector('#restaurant-cart-content');
+            const cartCountBadge = document.querySelector('#cart-count-badge');
             const addToCartForms = document.querySelectorAll('.restaurant-add-to-cart-form');
             const menuData = @json($menus->flatten()->mapWithKeys(fn($menu) => [$menu->id => ['name' => $menu->name, 'price' => (float) $menu->price]])->all());
             const toast = document.querySelector('#restaurant-toast');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+            const CART_UPDATE_URL = '{{ route("user.restaurant.cart.update") }}';
+            const CART_REMOVE_URL = '{{ route("user.restaurant.cart.remove", ["menuId" => "__MENU_ID__"]) }}';
 
             function formatRupiah(value) {
                 return new Intl.NumberFormat('id-ID', {
@@ -106,19 +128,20 @@
 
             function escapeHtml(value) {
                 return String(value)
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;')
+                    .replace(/&/g, '&')
+                    .replace(/</g, '<')
+                    .replace(/>/g, '>')
+                    .replace(/"/g, '"')
                     .replace(/'/g, '&#039;');
             }
 
-            function showToast(message) {
+            function showToast(message, isError = false) {
                 if (!toast) {
                     alert(message);
                     return;
                 }
                 toast.textContent = message;
+                toast.className = `fixed right-4 bottom-4 z-50 rounded-2xl px-4 py-3 shadow-xl text-white text-sm font-medium ${isError ? 'bg-rose-600' : 'bg-emerald-600'}`;
                 toast.classList.remove('hidden', 'opacity-0');
                 toast.classList.add('opacity-100');
                 clearTimeout(window.restaurantCartToastTimeout);
@@ -135,6 +158,7 @@
                             Keranjang Anda masih kosong.
                         </div>
                     `;
+                    if (cartCountBadge) cartCountBadge.textContent = '';
                     return;
                 }
 
@@ -142,26 +166,166 @@
                     const menu = menuData[item.menu_id] || {};
                     const name = escapeHtml(menu.name || item.name || 'Menu tidak ditemukan');
                     const price = Number(menu.price ?? item.price ?? 0);
-                    const total = formatRupiah(price * Number(item.quantity ?? 0));
+                    const qty = Number(item.quantity ?? 0);
+                    const subtotal = formatRupiah(price * qty);
                     return `
-                        <div class="rounded-xl border border-gray-200 p-3">
-                            <div class="flex items-center justify-between">
-                                <p class="font-semibold text-gray-900">${name}</p>
-                                <span class="text-sm text-gray-600">${total}</span>
+                        <div class="rounded-xl border border-gray-200 p-3 cart-item" data-menu-id="${item.menu_id}">
+                            <div class="flex items-start justify-between mb-2">
+                                <p class="font-semibold text-gray-900 text-sm">${name}</p>
+                                <span class="text-sm font-semibold text-gray-900 cart-item-subtotal">${subtotal}</span>
                             </div>
-                            <p class="text-sm text-gray-500 mt-1">Qty: ${Number(item.quantity ?? 0)}</p>
+                            <div class="flex items-center justify-between mt-2">
+                                <div class="flex items-center gap-2">
+                                    <button type="button" class="cart-qty-minus w-8 h-8 rounded-full border border-gray-300 text-gray-500 hover:bg-gray-100 flex items-center justify-center font-bold text-lg leading-none transition">−</button>
+                                    <span class="cart-qty-value w-8 text-center font-semibold text-gray-900 text-sm">${qty}</span>
+                                    <button type="button" class="cart-qty-plus w-8 h-8 rounded-full border border-amber-500 text-amber-600 hover:bg-amber-50 flex items-center justify-center font-bold text-lg leading-none transition">+</button>
+                                </div>
+                                <button type="button" class="cart-item-remove text-xs font-medium text-red-500 hover:text-red-700 hover:underline transition flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    Hapus
+                                </button>
+                            </div>
                         </div>
                     `;
                 }).join('');
+
+                const total = Object.values(cart).reduce((sum, item) => {
+                    const price = Number(menuData[item.menu_id]?.price ?? item.price ?? 0);
+                    return sum + (price * Number(item.quantity ?? 0));
+                }, 0);
 
                 cartContent.innerHTML = `
                     <div class="space-y-3">
                         ${itemsHtml}
                     </div>
-                    <div class="mt-6 border-t border-gray-200 pt-4">
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-semibold text-gray-700">Total</span>
+                            <span id="cart-grand-total" class="text-lg font-bold text-gray-900">${formatRupiah(total)}</span>
+                        </div>
                         <a href="{{ route('user.restaurant.checkout') }}" class="block w-full bg-amber-600 hover:bg-amber-700 text-white text-center uppercase tracking-widest font-semibold py-3 rounded-xl transition">Checkout</a>
                     </div>
                 `;
+
+                const totalQty = Object.values(cart).reduce((sum, item) => sum + Number(item.quantity ?? 0), 0);
+                if (cartCountBadge) cartCountBadge.textContent = totalQty > 0 ? totalQty + ' item' : '';
+
+                // Re-bind cart events after re-render
+                bindCartEvents();
+            }
+
+            function bindCartEvents() {
+                // Plus buttons
+                document.querySelectorAll('.cart-qty-plus').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const itemEl = this.closest('.cart-item');
+                        if (!itemEl) return;
+                        const menuId = itemEl.dataset.menuId;
+                        const currentQtyEl = itemEl.querySelector('.cart-qty-value');
+                        const currentQty = parseInt(currentQtyEl.textContent, 10);
+                        updateCartQuantity(menuId, currentQty + 1);
+                    });
+                });
+
+                // Minus buttons
+                document.querySelectorAll('.cart-qty-minus').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const itemEl = this.closest('.cart-item');
+                        if (!itemEl) return;
+                        const menuId = itemEl.dataset.menuId;
+                        const currentQtyEl = itemEl.querySelector('.cart-qty-value');
+                        const currentQty = parseInt(currentQtyEl.textContent, 10);
+                        if (currentQty <= 1) {
+                            removeCartItem(menuId);
+                        } else {
+                            updateCartQuantity(menuId, currentQty - 1);
+                        }
+                    });
+                });
+
+                // Remove buttons
+                document.querySelectorAll('.cart-item-remove').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const itemEl = this.closest('.cart-item');
+                        if (!itemEl) return;
+                        const menuId = itemEl.dataset.menuId;
+                        removeCartItem(menuId);
+                    });
+                });
+            }
+
+            function updateCartQuantity(menuId, newQuantity) {
+                const body = new URLSearchParams();
+                body.append('menu_id', menuId);
+                body.append('quantity', newQuantity);
+                body.append('_token', csrfToken);
+
+                fetch(CART_UPDATE_URL, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    },
+                    body: body.toString(),
+                    credentials: 'same-origin',
+                })
+                    .then(async response => {
+                        const data = await response.json().catch(() => null);
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                const loginUrl = data?.redirect || '{{ route('login') }}';
+                                window.location.href = loginUrl;
+                                return;
+                            }
+                            showToast(data?.message || 'Gagal memperbarui keranjang.', true);
+                            return;
+                        }
+                        if (data && data.success) {
+                            renderCart(data.cart || {});
+                            showToast('Keranjang diperbarui!');
+                        }
+                    })
+                    .catch(() => {
+                        showToast('Koneksi gagal. Silakan coba lagi.', true);
+                    });
+            }
+
+            function removeCartItem(menuId) {
+                const url = CART_REMOVE_URL.replace('__MENU_ID__', menuId);
+                const body = new URLSearchParams();
+                body.append('_token', csrfToken);
+                body.append('_method', 'DELETE');
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    },
+                    body: body.toString(),
+                    credentials: 'same-origin',
+                })
+                    .then(async response => {
+                        const data = await response.json().catch(() => null);
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                const loginUrl = data?.redirect || '{{ route('login') }}';
+                                window.location.href = loginUrl;
+                                return;
+                            }
+                            showToast(data?.message || 'Gagal menghapus item.', true);
+                            return;
+                        }
+                        if (data && data.success) {
+                            renderCart(data.cart || {});
+                            showToast('Item dihapus dari keranjang.');
+                        }
+                    })
+                    .catch(() => {
+                        showToast('Koneksi gagal. Silakan coba lagi.', true);
+                    });
             }
 
             function submitAddToCart(form) {
@@ -180,23 +344,34 @@
                     },
                     body: body.toString(),
                     credentials: 'same-origin',
+                    redirect: 'follow',
                 })
-                    .then(response => {
+                    .then(async response => {
+                        const data = await response.json().catch(() => null);
+
                         if (!response.ok) {
-                            throw new Error('Network response was not ok');
+                            // 401 Unauthenticated — redirect to login
+                            if (response.status === 401) {
+                                const loginUrl = data?.redirect || '{{ route('login') }}';
+                                window.location.href = loginUrl;
+                                return;
+                            }
+                            // 422 Validation error or other server error
+                            const msg = data?.message || data?.errors?.menu_id?.[0] || 'Gagal menambahkan menu.';
+                            showToast(msg, true);
+                            return;
                         }
-                        return response.json();
-                    })
-                    .then(data => {
+
                         if (!data || data.success !== true) {
-                            throw new Error('Response indicates failure');
+                            showToast(data?.message || 'Gagal menambahkan menu.', true);
+                            return;
                         }
 
                         renderCart(data.cart || {});
-                        showToast('Menu berhasil ditambahkan.');
+                        showToast('Menu berhasil ditambahkan ke keranjang!');
                     })
                     .catch(() => {
-                        alert('Gagal menambahkan menu. Silakan coba lagi.');
+                        showToast('Koneksi gagal. Silakan coba lagi.', true);
                     });
             }
 
@@ -206,6 +381,9 @@
                     submitAddToCart(form);
                 });
             });
+
+            // Initial bind for cart events if items exist
+            bindCartEvents();
         })();
     </script>
 </x-guest-layout>

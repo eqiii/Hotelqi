@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Models\RestaurantOrder;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\HotelProfile;
@@ -68,6 +69,19 @@ class ManagerFinanceController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        // ── Restaurant Revenue ────────────────────────────────────────
+        $restaurantQuery = RestaurantOrder::where('payment_status', 'paid')
+            ->when($startDate, fn($q) => $q->where('paid_at', '>=', $startDate->startOfDay()->copy()))
+            ->when($endDate,   fn($q) => $q->where('paid_at', '<=', $endDate->endOfDay()->copy()));
+
+        $restaurantRevenue     = (float) (clone $restaurantQuery)->sum('total');
+        $restaurantOrderCount  = (clone $restaurantQuery)->count();
+        $restaurantOrders      = (clone $restaurantQuery)
+            ->with(['guest.user', 'details.menu'])
+            ->latest('paid_at')
+            ->limit(20)
+            ->get();
+
         return view('manager.finance', compact(
             'totalRevenue',
             'paidTotal',
@@ -84,7 +98,10 @@ class ManagerFinanceController extends Controller
             'startDate',
             'endDate',
             'filterLabel',
-            'request'
+            'request',
+            'restaurantRevenue',
+            'restaurantOrderCount',
+            'restaurantOrders'
         ));
     }
 

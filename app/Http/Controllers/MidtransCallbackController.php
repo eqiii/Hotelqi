@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
-use App\Models\Payment;
 use App\Services\MidtransService;
 use App\Enums\PaymentStatus;
 use Illuminate\Http\Request;
@@ -34,6 +33,48 @@ class MidtransCallbackController extends Controller
                 return response('Invalid signature', 403);
             }
 
+            // Restaurant payment flow
+            if (str_starts_with($orderId, 'restaurant-')) {
+                $transactionStatus = $notification->transaction_status ?? null;
+                $fraudStatus = $notification->fraud_status ?? null;
+                $transactionId = $notification->transaction_id ?? null;
+
+                $newPaymentStatus = null;
+                if ($transactionStatus === 'capture') {
+                    $newPaymentStatus = $fraudStatus === 'challenge' ? PaymentStatus::PENDING : PaymentStatus::PAID;
+                } elseif ($transactionStatus === 'settlement') {
+                    $newPaymentStatus = PaymentStatus::PAID;
+                } elseif ($transactionStatus === 'pending') {
+                    $newPaymentStatus = PaymentStatus::PENDING;
+                } elseif ($transactionStatus === 'expire') {
+                    $newPaymentStatus = PaymentStatus::EXPIRED;
+                } elseif (in_array($transactionStatus, ['cancel', 'failure', 'deny'], true)) {
+                    $newPaymentStatus = ($transactionStatus === 'cancel' || $transactionStatus === 'deny')
+                        ? PaymentStatus::CANCELLED
+                        : PaymentStatus::FAILED;
+                } else {
+                    $newPaymentStatus = PaymentStatus::PENDING;
+                }
+
+                $restaurantOrder = \App\Models\RestaurantOrder::query()
+                    ->where('midtrans_order_id', $orderId)
+                    ->first();
+
+                if (!$restaurantOrder) {
+                    Log::warning('Midtrans callback: RestaurantOrder tidak ditemukan', ['order_id' => $orderId]);
+                    return response('RestaurantOrder not found', 404);
+                }
+
+                $restaurantOrder->update([
+                    'payment_status' => $newPaymentStatus,
+                    'order_status' => $newPaymentStatus === PaymentStatus::PAID ? 'confirmed' : $restaurantOrder->order_status,
+                    'paid_at' => $newPaymentStatus === PaymentStatus::PAID ? now() : $restaurantOrder->paid_at,
+                    'status' => $newPaymentStatus === PaymentStatus::PAID ? 'confirmed' : $restaurantOrder->status,
+                ]);
+
+                return response('OK', 200);
+            }
+
             $bookingId = (int) str_replace('booking-', '', $orderId);
             $booking = Booking::with('payment')->find($bookingId);
 
@@ -43,6 +84,7 @@ class MidtransCallbackController extends Controller
             }
 
             $payment = $booking->payment;
+
 
             // SECURITY: the gross_amount Midtrans confirms must match what we
             // actually charged for this booking, otherwise a signature valid

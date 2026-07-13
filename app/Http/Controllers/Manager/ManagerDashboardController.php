@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Payment;
-use App\Models\RestaurantMenu;
 use App\Models\RestaurantOrder;
 use App\Models\Room;
 use App\Enums\PaymentStatus;
@@ -17,13 +16,20 @@ class ManagerDashboardController extends Controller
     {
         $totalRooms = Room::count();
 
-        // ── Revenue ──────────────────────────────────────────────────
-        $totalRevenue = Payment::where('payment_status', PaymentStatus::PAID)->sum('amount');
+        // ── Revenue (Booking) ─────────────────────────────────────────
+        $totalBookingRevenue = Payment::where('payment_status', PaymentStatus::PAID)->sum('amount');
+        $restaurantRevenue = RestaurantOrder::where('payment_status', 'paid')->sum('total_price');
+        $totalRevenue = $totalBookingRevenue + $restaurantRevenue;
 
-        $revenueThisMonth = Payment::where('payment_status', PaymentStatus::PAID)
+        $bookingRevenueThisMonth = Payment::where('payment_status', PaymentStatus::PAID)
             ->whereMonth('paid_at', now()->month)
             ->whereYear('paid_at', now()->year)
             ->sum('amount');
+        $restaurantRevenueThisMonthCalc = RestaurantOrder::where('payment_status', 'paid')
+            ->whereMonth('paid_at', now()->month)
+            ->whereYear('paid_at', now()->year)
+            ->sum('total_price');
+        $revenueThisMonth = $bookingRevenueThisMonth + $restaurantRevenueThisMonthCalc;
 
         // ── Bookings ─────────────────────────────────────────────────
         $totalBookings     = Booking::count();
@@ -67,8 +73,8 @@ class ManagerDashboardController extends Controller
             ->sum('total_price');
         $restaurantTotalOrders = RestaurantOrder::count();
         $restaurantAverageOrderValue = $restaurantTotalOrders > 0
-            ? RestaurantOrder::where('payment_status', 'paid')->avg('total_price')
-            : 0;
+            ? (float) RestaurantOrder::where('payment_status', 'paid')->avg('total_price')
+            : 0.0;
         $bestSellingMenu = RestaurantOrder::query()
             ->join('restaurant_order_details', 'restaurant_orders.id', '=', 'restaurant_order_details.restaurant_order_id')
             ->join('restaurant_menus', 'restaurant_order_details.restaurant_menu_id', '=', 'restaurant_menus.id')

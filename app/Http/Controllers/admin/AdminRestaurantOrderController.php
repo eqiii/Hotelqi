@@ -10,7 +10,7 @@ class AdminRestaurantOrderController extends Controller
 {
     public function index()
     {
-        $orders = RestaurantOrder::with(['guest.user', 'booking.room.roomType'])->latest()->paginate(15);
+        $orders = RestaurantOrder::with(['guest.user', 'booking.room.roomType', 'details'])->latest()->paginate(15);
 
         return view('admin.restaurant-orders.index', compact('orders'));
     }
@@ -25,7 +25,7 @@ class AdminRestaurantOrderController extends Controller
     public function updateStatus(Request $request, RestaurantOrder $restaurantOrder)
     {
         $data = $request->validate([
-            'order_status' => ['required', 'in:pending_payment,confirmed,cooking,ready,delivering,completed'],
+            'order_status' => ['required', 'in:pending,confirmed,cooking,ready,delivering,completed,cancelled'],
         ]);
 
         $restaurantOrder->update($data);

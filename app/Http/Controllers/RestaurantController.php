@@ -335,9 +335,12 @@ class RestaurantController extends Controller
                         ->first();
 
                     if (!$order) {
+                        $user = Auth::user();
                         $order = RestaurantOrder::create([
+                            'user_id' => $user->id,
                             'guest_id' => $guest->id,
                             'booking_id' => $bookingId,
+                            'order_number' => RestaurantOrder::generateOrderNumber(),
                             'invoice_number' => 'RST-' . strtoupper(uniqid()),
                             'subtotal' => $subtotal = $items->sum(fn($i) => (float)($i['price'] ?? 0) * (int)($i['quantity'] ?? 0)),
                             'tax' => $tax = round($subtotal * 0.1, 2),
@@ -345,7 +348,7 @@ class RestaurantController extends Controller
                             'total_price' => $subtotal + $tax,
                             'payment_method' => 'midtrans',
                             'payment_status' => 'pending',
-                            'order_status' => 'pending_payment',
+                            'order_status' => 'pending',
                             'serve_type' => $checkout['details']['serve_type'] ?? 'now',
                             'serve_time' => $checkout['details']['serve_time'] ?? null,
                             'dining_type' => $checkout['details']['dining_type'] ?? 'dine_in',
@@ -416,23 +419,15 @@ class RestaurantController extends Controller
             return redirect()->route('restaurant')->withErrors(['cart' => 'Data checkout tidak ditemukan.']);
         }
 
-        // Only proceed when payment is actually settled / captured.
-        // 'pending' means the user hasn't paid yet (e.g. bank transfer waiting).
-        if (!in_array($status, ['settlement', 'capture'], true)) {
-            return redirect()->route('user.restaurant.orders')
-                ->withErrors(['payment' => 'Pembayaran belum selesai atau dibatalkan.']);
-        }
-
         try {
-            DB::transaction(function () use ($guest, $checkout, $orderId) {
+            DB::transaction(function () use ($guest, $checkout, $orderId, $status) {
                 $order = RestaurantOrder::query()
                     ->where('midtrans_order_id', $orderId)
-                    ->where('guest_id', $guest->id)
                     ->first();
 
                 if (!$order) {
-                    // As a safety net: if paymentFinish is hit but order was never created,
-                    // create it from session checkout.
+                    // Safety net: order was not created during payment().
+                    // Try to create it from session data or restaurant_payment_order_id.
                     if (empty($checkout['cart'] ?? []) || empty($checkout['details'] ?? [])) {
                         throw new \RuntimeException('Restaurant order not found for midtrans_order_id');
                     }
@@ -444,24 +439,26 @@ class RestaurantController extends Controller
                     $bookingId = $checkout['details']['booking_id'] ?? null;
 
                     $order = RestaurantOrder::create([
+                        'user_id' => $guest->user_id,
                         'guest_id' => $guest->id,
                         'booking_id' => $bookingId,
+                        'order_number' => RestaurantOrder::generateOrderNumber(),
                         'invoice_number' => 'RST-' . strtoupper(uniqid()),
                         'subtotal' => $subtotal,
                         'tax' => $tax,
                         'total' => $total,
                         'total_price' => $total,
                         'payment_method' => $checkout['details']['payment_method'] ?? 'midtrans',
-                        'payment_status' => 'paid',
-                        'order_status' => 'confirmed',
+                        'payment_status' => 'pending',
+                        'order_status' => 'pending',
                         'serve_type' => $checkout['details']['serve_type'] ?? 'now',
                         'serve_time' => $checkout['details']['serve_time'] ?? null,
                         'dining_type' => $checkout['details']['dining_type'] ?? 'dine_in',
                         'guest_name' => $checkout['details']['guest_name'] ?? null,
                         'room_number' => $checkout['details']['room_number'] ?? null,
                         'notes' => $checkout['details']['notes'] ?? null,
-                        'paid_at' => now(),
-                        'status' => 'confirmed',
+                        'paid_at' => null,
+                        'status' => 'pending',
                         'midtrans_order_id' => $orderId,
                     ]);
 
@@ -480,31 +477,29 @@ class RestaurantController extends Controller
                             'price' => (float)($item['price'] ?? 0),
                             'subtotal' => (float)($item['price'] ?? 0) * $qty,
                         ]);
-
-                        if ($menu->stock_quantity !== null) {
-                            $menu->decrement('stock_quantity', $qty);
-                        }
                     }
                 }
 
-                // Update payment/order status to paid/confirmed.
-                $order->update([
-                    'payment_status' => 'paid',
-                    'order_status' => 'confirmed',
-                    'paid_at' => now(),
-                    'status' => 'confirmed',
-                ]);
+                // Determine if payment is actually settled/captured
+                $isPaid = in_array($status, ['settlement', 'capture'], true);
 
-                // Decrement stock if not already decremented (best-effort).
-                // If you track idempotency later, keep this minimal.
-                $order->loadMissing(['details']);
-                foreach ($order->details as $detail) {
-                    $menu = RestaurantMenu::lockForUpdate()->find($detail->restaurant_menu_id);
-                    if ($menu && $menu->stock_quantity !== null) {
-                        // Only decrement when order was just transitioned.
-                        // This is best-effort; repeated calls might double-decrement.
-                        // Current flow should call once (finish/callback).
-                        $menu->decrement('stock_quantity', (int)$detail->quantity);
+                // Only update if currently pending (avoid overwriting callback updates)
+                if ($order->payment_status === 'pending' || $isPaid) {
+                    $order->update([
+                        'payment_status' => $isPaid ? 'paid' : 'pending',
+                        'order_status' => $isPaid ? 'confirmed' : 'pending',
+                        'paid_at' => $isPaid ? now() : $order->paid_at,
+                    ]);
+                }
+
+                // Decrement stock only when first time becoming paid
+                if ($isPaid) {
+                    $order->loadMissing(['details']);
+                    foreach ($order->details as $detail) {
+                        $menu = RestaurantMenu::lockForUpdate()->find($detail->restaurant_menu_id);
+                        if ($menu && $menu->stock_quantity !== null) {
+                            $menu->decrement('stock_quantity', (int)$detail->quantity);
+                        }
                     }
                 }
             });

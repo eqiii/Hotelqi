@@ -69,7 +69,6 @@ class MidtransCallbackController extends Controller
                     'payment_status' => $newPaymentStatus,
                     'order_status' => $newPaymentStatus === PaymentStatus::PAID ? 'confirmed' : $restaurantOrder->order_status,
                     'paid_at' => $newPaymentStatus === PaymentStatus::PAID ? now() : $restaurantOrder->paid_at,
-                    'status' => $newPaymentStatus === PaymentStatus::PAID ? 'confirmed' : $restaurantOrder->status,
                 ]);
 
                 return response('OK', 200);

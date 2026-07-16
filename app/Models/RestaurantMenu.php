@@ -24,7 +24,20 @@ class RestaurantMenu extends Model
         'price'          => 'decimal:2',
         'is_available'   => 'boolean',
         'stock_quantity' => 'integer',
+        'category'       => 'string',
     ];
+
+    public const CATEGORIES = [
+        'food'    => 'Makanan',
+        'drink'   => 'Minuman',
+        'dessert' => 'Dessert',
+        'snack'   => 'Snack',
+    ];
+
+    public function getCategoryLabelAttribute(): string
+    {
+        return self::CATEGORIES[$this->category] ?? ucfirst($this->category);
+    }
 
     // ==================== RELATIONS ====================
 

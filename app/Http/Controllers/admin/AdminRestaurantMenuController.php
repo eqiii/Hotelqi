@@ -9,16 +9,25 @@ use Illuminate\Support\Facades\Storage;
 
 class AdminRestaurantMenuController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $menus = RestaurantMenu::latest()->paginate(15);
+        $query = RestaurantMenu::query();
 
-        return view('admin.restaurant-menus.index', compact('menus'));
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        $menus = $query->latest()->paginate(15);
+
+        $categories = RestaurantMenu::CATEGORIES;
+
+        return view('admin.restaurant-menus.index', compact('menus', 'categories'));
     }
 
     public function create()
     {
-        return view('admin.restaurant-menus.create');
+        $categories = RestaurantMenu::CATEGORIES;
+        return view('admin.restaurant-menus.create', compact('categories'));
     }
 
     public function store(Request $request)
@@ -27,7 +36,7 @@ class AdminRestaurantMenuController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
-            'category' => ['nullable', 'string', 'max:100'],
+            'category' => ['required', 'string', 'in:' . implode(',', array_keys(RestaurantMenu::CATEGORIES))],
             'is_available' => ['sometimes', 'boolean'],
             'stock_quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
@@ -47,7 +56,8 @@ class AdminRestaurantMenuController extends Controller
 
     public function edit(RestaurantMenu $restaurantMenu)
     {
-        return view('admin.restaurant-menus.edit', compact('restaurantMenu'));
+        $categories = RestaurantMenu::CATEGORIES;
+        return view('admin.restaurant-menus.edit', compact('restaurantMenu', 'categories'));
     }
 
     public function update(Request $request, RestaurantMenu $restaurantMenu)
@@ -56,7 +66,7 @@ class AdminRestaurantMenuController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
-            'category' => ['nullable', 'string', 'max:100'],
+            'category' => ['required', 'string', 'in:' . implode(',', array_keys(RestaurantMenu::CATEGORIES))],
             'is_available' => ['sometimes', 'boolean'],
             'stock_quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'max:2048'],

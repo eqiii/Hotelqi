@@ -89,7 +89,7 @@ Route::get('/payment/finish', [BookingController::class, 'finishPayment'])->name
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
-        $user = auth()->user();
+        $user = \Illuminate\Support\Facades\Auth::user();
 
         return match($user?->role) {
             'admin'   => redirect()->route('admin.dashboard'),
@@ -115,7 +115,7 @@ Route::middleware(['auth'])->group(function () {
 // ==================== USER / GUEST AREA ====================
 Route::middleware(['auth', 'verified', 'role:guest'])->prefix('user')->name('user.')->group(function () {
     Route::get('/dashboard', function () {
-        $user = auth()->user();
+        $user = \Illuminate\Support\Facades\Auth::user();
         $guest = $user->guest;
         $recentBookings = $guest ? $guest->bookings()->with(['room.roomType', 'payment'])->latest()->take(3)->get() : collect();
         $totalBookings = $guest ? $guest->totalBookings() : 0;
@@ -126,6 +126,8 @@ Route::middleware(['auth', 'verified', 'role:guest'])->prefix('user')->name('use
     Route::post('/booking', [BookingController::class, 'store'])->name('booking.store');
     Route::get('/booking/create/{roomType}', [BookingController::class, 'create'])->name('booking.create');
     Route::get('/booking/{booking}/payment', [BookingController::class, 'payment'])->name('booking.payment');
+    Route::get('/booking/{booking}/detail', [BookingController::class, 'detail'])->name('booking.detail');
+    Route::get('/booking/{booking}/pdf', [BookingController::class, 'downloadPdf'])->name('booking.pdf');
     Route::get('/booking/history', [BookingController::class, 'history'])->name('booking.history');
 
     Route::post('/restaurant/cart/add', [RestaurantController::class, 'addToCart'])->name('restaurant.cart.add');

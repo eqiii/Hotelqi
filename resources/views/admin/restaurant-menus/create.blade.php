@@ -14,6 +14,15 @@
             <input name="name" required />
         </div>
         <div>
+            <label>Category</label>
+            <select name="category" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                <option value="">-- Pilih Kategori --</option>
+                @foreach ($categories as $value => $label)
+                    <option value="{{ $value }}" {{ old('category') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
             <label>Price</label>
             <input name="price" required type="number" step="0.01" />
         </div>

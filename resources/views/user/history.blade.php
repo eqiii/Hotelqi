@@ -83,19 +83,35 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    @if($booking->status === 'pending' || ($booking->payment && $booking->payment->payment_status === 'pending'))
-                                        <a href="{{ route('user.booking.payment', $booking) }}"
-                                           class="gold-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        @if($booking->status === 'pending' || ($booking->payment && $booking->payment->payment_status === 'pending'))
+                                            <a href="{{ route('user.booking.payment', $booking) }}"
+                                               class="gold-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                                </svg>
+                                                Bayar
+                                            </a>
+                                        @elseif($booking->status === 'checked_out')
+                                            <span class="text-xs text-gray-400 italic">Selesai</span>
+                                        @endif
+                                        <a href="{{ route('user.booking.detail', $booking) }}"
+                                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
-                                            Bayar
+                                            Detail
                                         </a>
-                                    @elseif($booking->status === 'checked_out')
-                                        <span class="text-xs text-gray-400 italic">Selesai</span>
-                                    @else
-                                        <span class="text-xs text-gray-400 italic">—</span>
-                                    @endif
+                                        @if($booking->payment && $booking->payment->isPaid())
+                                            <a href="{{ route('user.booking.pdf', $booking) }}"
+                                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                                PDF
+                                            </a>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -130,12 +146,24 @@
                                 <p class="text-xs text-gray-500">{{ $booking->check_in->format('d M') }} - {{ $booking->check_out->format('d M Y') }}</p>
                                 <p class="font-bold text-gray-800">{{ format_rupiah($booking->total_price) }}</p>
                             </div>
-                            @if($booking->status === 'pending' || ($booking->payment && $booking->payment->payment_status === 'pending'))
-                                <a href="{{ route('user.booking.payment', $booking) }}"
-                                   class="gold-btn px-4 py-2 rounded-lg text-xs font-semibold">
-                                    Bayar Sekarang
+                            <div class="flex flex-wrap gap-2">
+                                <a href="{{ route('user.booking.detail', $booking) }}"
+                                   class="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+                                    Detail
                                 </a>
-                            @endif
+                                @if($booking->payment && $booking->payment->isPaid())
+                                    <a href="{{ route('user.booking.pdf', $booking) }}"
+                                       class="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition">
+                                        PDF
+                                    </a>
+                                @endif
+                                @if($booking->status === 'pending' || ($booking->payment && $booking->payment->payment_status === 'pending'))
+                                    <a href="{{ route('user.booking.payment', $booking) }}"
+                                       class="gold-btn px-3 py-2 rounded-lg text-xs font-semibold">
+                                        Bayar
+                                    </a>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 @endforeach

@@ -35,8 +35,9 @@ class AuthController extends Controller
         ]);
 
         Guest::create([
-            'user_id' => $user->id,
-            'phone'   => $request->phone,
+            'user_id'   => $user->id,
+            'full_name' => $request->name,
+            'phone'     => $request->phone,
         ]);
 
         // Trigger email verification

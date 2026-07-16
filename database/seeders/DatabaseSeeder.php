@@ -15,26 +15,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // ==========================
-        // Admin Account (Primary)
+        // Admin Account
         // ==========================
-        User::firstOrCreate(
-            ['email' => 'admin@hoteleqi.com'],
-            [
-                'name'              => 'Administrator',
-                'password'          => Hash::make('Admin@12345'),
-                'role'              => 'admin',
-                'email_verified_at' => now(),
-            ]
-        );
-
-        // Admin fallback (lama) - update password jika ada
-        $oldAdmin = User::where('email', 'admin@gmail.com')->first();
-        if ($oldAdmin) {
-            $oldAdmin->update([
-                'password'          => Hash::make('Admin@12345'),
-                'email_verified_at' => now(),
-            ]);
-        }
+        $this->call([
+            AdminSeeder::class,
+        ]);
 
         // ==========================
         // Guest Account (untuk testing)
@@ -52,7 +37,8 @@ class DatabaseSeeder extends Seeder
         Guest::firstOrCreate(
             ['user_id' => $guestUser->id],
             [
-                'phone' => '081234567890',
+                'full_name' => 'Test User',
+                'phone'     => '081234567890',
             ]
         );
 

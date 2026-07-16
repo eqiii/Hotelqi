@@ -13,17 +13,14 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        // Cek dulu biar tidak double admin
-        $admin = User::where('email', 'admin@hotel.com')->first();
-
-        if (!$admin) {
-            User::create([
-                'name' => 'Administrator',
-                'email' => 'admin@hotel.com',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
-                'email_verified_at' => now(), // optional biar langsung verified
-            ]);
-        }
+        User::updateOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
+                'name'              => 'Admin Hotel',
+                'password'          => Hash::make('Admin@12345'),
+                'role'              => 'admin',
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }

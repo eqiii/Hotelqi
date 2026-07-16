@@ -8,12 +8,33 @@
 
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <!-- Filter Kategori -->
+            <div class="mb-8">
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="{{ route('restaurant') }}" class="px-4 py-2 rounded-full text-sm font-semibold transition {{ !$selectedCategory ? 'bg-amber-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-amber-50' }}">
+                        Semua
+                    </a>
+                    @foreach ($categories as $value => $label)
+                        <a href="{{ route('restaurant', ['category' => $value]) }}" class="px-4 py-2 rounded-full text-sm font-semibold transition {{ $selectedCategory == $value ? 'bg-amber-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-amber-50' }}">
+                            {{ $label }}
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
                 <div class="lg:col-span-2 space-y-6">
-                    @foreach ($menus as $category => $items)
+                    @php
+                        $categoryOrder = ['food', 'drink', 'dessert', 'snack'];
+                    @endphp
+                    @foreach ($categoryOrder as $catKey)
+                        @if (!isset($menus[$catKey]))
+                            @continue
+                        @endif
+                        @php $items = $menus[$catKey]; @endphp
                         <div class="bg-white rounded-3xl shadow border border-gray-100 overflow-hidden">
                             <div class="bg-amber-600 px-6 py-4 text-white font-semibold tracking-wider uppercase">
-                                {{ $category }}</div>
+                                {{ $categories[$catKey] ?? ucfirst($catKey) }}</div>
                             <div class="p-6 space-y-6">
                                 @foreach ($items as $menu)
                                     <div class="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-4 items-center border-b border-gray-100 pb-4">

@@ -55,6 +55,7 @@ class AdminGuestController extends Controller
         ]);
 
         $guest->update([
+            'full_name'  => $data['name'],
             'phone'      => $data['phone'],
             'address'    => $data['address'],
             'ktp_number' => $data['ktp_number'],

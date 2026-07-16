@@ -51,10 +51,15 @@ class RestaurantController extends Controller
 
     // ==================== PUBLIC MENU ====================
 
-    public function index()
+    public function index(Request $request)
     {
-        $menus = RestaurantMenu::available()
-            ->orderBy('category')
+        $query = RestaurantMenu::available();
+
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        $menus = $query->orderBy('category')
             ->get()
             ->groupBy('category');
 
@@ -67,7 +72,10 @@ class RestaurantController extends Controller
             $bookings = $guest->bookings()->active()->get();
         }
 
-        return view('restaurant.index', compact('menus', 'bookings'));
+        $categories = RestaurantMenu::CATEGORIES;
+        $selectedCategory = $request->category;
+
+        return view('restaurant.index', compact('menus', 'bookings', 'categories', 'selectedCategory'));
     }
 
     // ==================== CART ====================

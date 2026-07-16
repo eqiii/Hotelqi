@@ -7,13 +7,16 @@ use App\Models\Booking;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Services\MidtransService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class BookingController extends Controller
 {
     public function store(StoreBookingRequest $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         // Ensure room type exists
         $roomType = RoomType::findOrFail($request->room_type_id);
@@ -120,7 +123,7 @@ class BookingController extends Controller
                 }
             } catch (\Exception $e) {
                 // Log error tapi jangan crash
-                \Log::error('Midtrans error: ' . $e->getMessage());
+                Log::error('Midtrans error: ' . $e->getMessage());
                 $snapToken = null;
             }
         }
@@ -140,6 +143,21 @@ class BookingController extends Controller
                 ->where('id', $bookingId)
                 ->where('guest_id', Auth::check() ? Auth::user()->guest?->id : null)
                 ->first();
+
+            // Update payment status from Midtrans redirect if callback hasn't arrived yet.
+            // This is critical in sandbox environments where the server-to-server callback
+            // may not reach localhost. Also serves as a safe fallback in production.
+            if ($booking && $booking->payment && !$booking->payment->isPaid()) {
+                $isSuccess = in_array($status, ['settlement', 'capture'], true);
+                if ($isSuccess) {
+                    $booking->payment->markAsPaid();
+                    Log::info('Booking payment updated via finishPayment redirect', [
+                        'booking_id' => $booking->id,
+                        'order_id' => $orderId,
+                        'status' => $status,
+                    ]);
+                }
+            }
         }
 
         return view('user.payment-finish', [
@@ -147,6 +165,35 @@ class BookingController extends Controller
             'status'   => $status,
             'booking'  => $booking,
         ]);
+    }
+
+    public function detail(Booking $booking)
+    {
+        // Authorization: customer can only access their own booking
+        $guestId = Auth::user()->guest?->id;
+        if ($booking->guest_id !== $guestId) {
+            abort(403);
+        }
+
+        $booking->load(['room.roomType', 'payment', 'guest.user', 'histories']);
+
+        return view('user.booking.detail', compact('booking'));
+    }
+
+    public function downloadPdf(Booking $booking)
+    {
+        // Authorization: customer can only download their own booking voucher
+        $guestId = Auth::user()->guest?->id;
+        if ($booking->guest_id !== $guestId) {
+            abort(403);
+        }
+
+        $booking->load(['room.roomType', 'payment', 'guest.user']);
+
+        $pdf = Pdf::loadView('user.booking.pdf', compact('booking'));
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->download('voucher-' . $booking->invoice_number . '.pdf');
     }
 
     public function history()

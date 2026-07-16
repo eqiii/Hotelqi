@@ -1,468 +1,437 @@
-# AUDIT REPORT: Restaurant Order Flow
+# 🏨 HMIS (Hotel Management Information System) — Comprehensive Audit Report
 
-## Audit Date: 2026-07-13
-## Auditor: Senior Laravel Software Architect
-
----
-
-# CRITICAL ISSUES
+**Project:** HotelEqi  
+**Auditor:** Senior Full Stack Laravel Developer / Software Architect  
+**Date:** July 15, 2026  
+**Version:** 1.0
 
 ---
 
-## Issue #1
+## 1. 📊 PROGRESS PROJECT
 
-**Severity:** CRITICAL
-
-**Problem:**
-`midtrans_order_id` is silently NOT PERSISTED when creating RestaurantOrder during the `payment()` method. The Midtrans callback can never match any restaurant order. `paymentFinish()` cannot find the pre-created order. Both the callback and the finish handler fail to recognize the order.
-
-**Evidence:**
-`app/Models/RestaurantOrder.php` lines 14-33 (`$fillable` array):
-```php
-protected $fillable = [
-    'guest_id', 'booking_id', 'invoice_number', 'subtotal', 'tax', 'total',
-    'total_price', 'payment_method', 'payment_status', 'order_status',
-    'serve_type', 'serve_time', 'dining_type', 'guest_name', 'room_number',
-    'notes', 'paid_at', 'status',
-    // ❌ 'midtrans_order_id' IS MISSING
-];
-```
-
-`app/Http/Controllers/RestaurantController.php` line 357 attempts to mass-assign:
-```php
-RestaurantOrder::create([
-    ...
-    'midtrans_order_id' => $orderId,  // ← SILENTLY DROPPED by Eloquent
-]);
-```
-
-Migration `2026_07_10_000000_add_midtrans_order_id_to_restaurant_orders_table.php` adds the column, but the Model's `$fillable` was never updated to include it.
-
-**Root Cause:**
-The `midtrans_order_id` column was added via migration but the `$fillable` array in `RestaurantOrder` was NOT updated to include it. Eloquent mass-assignment protection silently discards the value.
-
-**Affected Files:**
-- `app/Models/RestaurantOrder.php` (missing fillable field)
-- `app/Http/Controllers/RestaurantController.php` (payment() and paymentFinish() both attempt to save/search midtrans_order_id)
-- `app/Http/Controllers/MidtransCallbackController.php` (searches by midtrans_order_id but never finds it)
-
-**Why it breaks the flow:**
-1. `payment()` creates RestaurantOrder → `midtrans_order_id` is NULL in DB
-2. Midtrans sends server-to-server notification → `/payment/callback` searches `WHERE midtrans_order_id = 'restaurant-XXX'` → returns NULL → returns 404 "RestaurantOrder not found" → **payment status NEVER updated via callback**
-3. `paymentFinish()` searches by `midtrans_order_id` → cannot find the pre-created order → falls to safety-net code
-4. Safety-net creates a SECOND order from session data → still `midtrans_order_id` is NULL again
-5. If user refreshes `paymentFinish()` → creates THIRD order (duplicate)
-6. Midtrans callback still cannot update any of these orders because `midtrans_order_id` is NULL on all of them
-7. History might show some orders (if safety-net succeeded), but payment_status is inconsistently set
-
-**Recommended Fix:**
-Add `'midtrans_order_id'` to the `$fillable` array in `RestaurantOrder` model.
+| Area | Progress |
+|------|----------|
+| **Overall** | **62%** |
+| Backend | 70% |
+| Frontend (Blade) | 65% |
+| Database | 60% |
+| Testing | 15% |
+| Security Hardening | 50% |
+| Deployment Ready | 40% |
 
 ---
 
-## Issue #2
+## 2. ✅ CHECKLIST FITUR
 
-**Severity:** CRITICAL
+### PUBLIC
+| Fitur | Status | Notes |
+|-------|--------|-------|
+| Landing Page | ✅ Selesai | Hero, About, Rooms, Facilities, Testimonials, Gallery sections |
+| Hotel Profile | ⚠ Sebagian | Model exists, view uses `hotel_name()` helper, but no dedicated profile page |
+| Room List | ✅ Selesai | `/rooms` with pagination |
+| Room Detail | ✅ Selesai | `/rooms/{roomType}` with facilities |
+| Room Search | ⚠ Sebagian | Search bar on landing page but no actual search logic in controller |
+| Facilities | ⚠ Sebagian | Hardcoded on landing page, not dynamic from DB |
+| Restaurant | ✅ Selesai | Menu listing, cart, checkout, payment |
+| Gallery | ⚠ Sebagian | Displayed on landing page, but no admin CRUD |
+| Contact | ❌ Belum Ada | No contact page, no contact form |
+| FAQ | ✅ Selesai | `/faq` route works |
 
-**Problem:**
-`paymentFinish()` can create DUPLICATE orders on every invocation because it never finds the pre-created order (due to Issue #1) and has no idempotency guard besides `midtrans_order_id` lookup.
+### AUTH
+| Fitur | Status | Notes |
+|-------|--------|-------|
+| Login | ✅ Selesai | With reCAPTCHA support |
+| Register | ✅ Selesai | With email verification trigger |
+| Email Verification | ✅ Selesai | Using Laravel built-in |
+| Forgot Password | ✅ Selesai | Using Laravel built-in |
+| Captcha | ⚠ Sebagian | Only on login, not on register |
 
-**Evidence:**
-`app/Http/Controllers/RestaurantController.php` lines 427-437:
-```php
-DB::transaction(function () use ($guest, $checkout, $orderId) {
-    $order = RestaurantOrder::query()
-        ->where('midtrans_order_id', $orderId)  // ← never finds (Issue #1)
-        ->where('guest_id', $guest->id)
-        ->first();
+### CUSTOMER
+| Fitur | Status | Notes |
+|-------|--------|-------|
+| Dashboard | ✅ Selesai | With recent bookings, totals |
+| Booking Room | ✅ Selesai | With date selection, price calculation |
+| Booking History | ✅ Selesai | Paginated list |
+| Payment Midtrans | ✅ Selesai | Snap token, callback, finish page |
+| Invoice | ✅ Selesai | Detail page + PDF download |
+| Profile | ✅ Selesai | Edit profile |
+| Restaurant Order | ✅ Selesai | Cart, checkout, payment, history |
 
-    if (!$order) {
-        // Safety net: creates DUPLICATE order from session
-        if (empty($checkout['cart'] ?? []) || empty($checkout['details'] ?? [])) {
-            throw new \RuntimeException('Restaurant order not found for midtrans_order_id');
-        }
-        $order = RestaurantOrder::create([...]);  // ← NEW order created
-    }
-```
+### ADMIN
+| Fitur | Status | Notes |
+|-------|--------|-------|
+| Dashboard | ✅ Selesai | Stats, latest bookings |
+| CRUD Room Type | ✅ Selesai | Resource controller |
+| CRUD Room | ✅ Selesai | Resource controller |
+| CRUD Facility | ❌ Belum Ada | No admin controller for facilities |
+| CRUD Gallery | ❌ Belum Ada | No admin controller for gallery |
+| CRUD Restaurant Menu | ✅ Selesai | Resource controller |
+| CRUD Hotel Profile | ⚠ Sebagian | Only edit/update, no create |
+| CRUD Booking | ✅ Selesai | View, confirm, check-in/out, cancel |
+| CRUD Customer | ✅ Selesai | View, edit, delete guests |
+| CRUD Staff | ❌ Belum Ada | No staff management |
+| Manage Payment | ⚠ Sebagian | Via Midtrans callback only, no manual payment management |
+| Manage Restaurant Order | ✅ Selesai | View, update status |
 
-There is NO unique constraint on `midtrans_order_id` and no check against `guest_id + invoice_number` or any other uniqueness.
-
-**Root Cause:**
-The safety-net code assumes that if `midtrans_order_id` lookup fails, the order doesn't exist. But due to Issue #1, the lookup ALWAYS fails. Every call to `paymentFinish()` creates a new order if session data exists.
-
-**Affected Files:**
-- `app/Http/Controllers/RestaurantController.php` (paymentFinish method)
-- `app/Models/RestaurantOrder.php` (no unique constraint)
-
-**Why it breaks the flow:**
-- If session data persists, multiple calls to `paymentFinish()` create multiple identical orders
-- If session data is lost (second call), RuntimeException is thrown → user sees "Terjadi kesalahan" error
-- Inconsistent order state: some orders have payment_status='pending' (from payment()), some have 'paid' (from paymentFinish())
-- Manager financial report double-counts or inconsistently counts restaurant income
-
-**Recommended Fix:**
-Add a unique constraint on `(guest_id, midtrans_order_id)` and fix Issue #1 first. Then validate existence by guest_id + order status rather than midtrans_order_id alone if midtrans_order_id could be null for non-Midtrans payments.
-
----
-
-## Issue #3
-
-**Severity:** HIGH
-
-**Problem:**
-Route name collision and dual route registration for restaurant routes. The same routes defined with `name('restaurant.*')` under `auth` middleware AND with `name('user.restaurant.*')` under `auth + verified + role:guest` middleware both exist simultaneously, causing potential confusion and the `user.restaurant.payment.finish` route (used in payment view) requires verified email.
-
-**Evidence:**
-`routes/web.php` lines 90-113:
-```php
-Route::middleware(['auth'])->group(function () {
-    Route::get('/restaurant/payment/finish', [RestaurantController::class, 'paymentFinish'])->name('restaurant.payment.finish');
-    Route::get('/restaurant/orders', [RestaurantController::class, 'orders'])->name('restaurant.orders');
-    // ... other restaurant routes
-});
-
-Route::middleware(['auth', 'verified', 'role:guest'])->prefix('user')->name('user.')->group(function () {
-    // Lines 137-142 REDEFINE the same routes:
-    Route::get('/restaurant/payment/finish', [RestaurantController::class, 'paymentFinish'])->name('restaurant.payment.finish');
-    Route::get('/restaurant/orders', [RestaurantController::class, 'orders'])->name('restaurant.orders');
-    // ...
-});
-```
-
-Note: line 138 uses `name('restaurant.payment.finish')` but due to `name('user.')` prefix on the group, it becomes `user.restaurant.payment.finish`.
-
-The payment view at `resources/views/restaurant/payment.blade.php` line 31:
-```javascript
-window.location.href = '{{ route('user.restaurant.payment.finish') }}?order_id=...'
-```
-
-This generates URL `/user/restaurant/payment/finish` which requires:
-1. Authentication ✓
-2. Verified email (might fail if user hasn't verified)
-3. Role must be 'guest' (might fail for admin/manager testing)
-
-**Root Cause:**
-Routes are registered twice with different middleware stacks but pointing to the same controller methods.
-
-**Affected Files:**
-- `routes/web.php`
-- `resources/views/restaurant/payment.blade.php`
-- All restaurant-related views that generate routes
-
-**Why it breaks the flow:**
-- If the user has not verified their email, the redirect after payment fails with a 403 or redirect to login
-- The user may see the wrong page after payment, never reaching `paymentFinish()`
-- This means the order stays in 'pending' status and history appears empty
-- Admin/manager roles testing the flow would be locked out (redirected to dashboard)
-
-**Recommended Fix:**
-Remove the duplicate routes from lines 90-113 OR from lines 116-143. Keep only ONE set of routes with the appropriate middleware. Decide: either all restaurant routes require `verified + role:guest` OR just `auth`. If the finish URL needs to work without email verification, keep a separate unverified route for the callback/finish redirect.
+### MANAGEMENT
+| Fitur | Status | Notes |
+|-------|--------|-------|
+| Dashboard | ✅ Selesai | Manager dashboard exists |
+| Financial Report | ✅ Selesai | With filters, charts |
+| Occupancy Report | ❌ Belum Ada | Not implemented |
+| Booking Report | ❌ Belum Ada | Not implemented |
+| Download PDF | ✅ Selesai | Financial report PDF |
 
 ---
 
-# HIGH SEVERITY ISSUES
+## 3. 🚨 ERROR FINDER
+
+### 3.1 Route Errors
+
+| # | File | Issue | Severity |
+|---|------|-------|----------|
+| E1 | `routes/web.php:21` | CSRF exception in `bootstrap/app.php` for `midtrans/callback` but actual route is `payment/callback` — CSRF will block Midtrans callback | **CRITICAL** |
+| E2 | `routes/web.php:101-113` vs `133-144` | Duplicate restaurant cart/checkout routes defined in both `auth` group and `user` guest group — causes route conflicts | **HIGH** |
+| E3 | `routes/web.php` | No route for `facilities`, `gallery`, `contact` pages | **MEDIUM** |
+| E4 | `routes/web.php` | Admin has no routes for Facility CRUD, Gallery CRUD | **MEDIUM** |
+| E5 | `routes/web.php:189-193` | Manager routes missing occupancy report, booking report | **MEDIUM** |
+
+### 3.2 Controller Errors
+
+| # | File | Issue | Severity |
+|---|------|-------|----------|
+| E6 | `RestaurantController.php:570` | Controller is 570 lines — violates Single Responsibility Principle | **MEDIUM** |
+| E7 | `BookingController.php:48-51` | Only checks 1 available room — if multiple rooms of same type exist, only first is used | **MEDIUM** |
+| E8 | `BookingController.php:106` | Order ID `booking-{id}` is predictable — no UUID/unique identifier | **LOW** |
+| E9 | `AuthController.php:74-100` | CAPTCHA verification logic is duplicated and could be extracted to a FormRequest | **LOW** |
+| E10 | `LandingController.php` | No search/filter logic for rooms — search bar on landing does nothing | **MEDIUM** |
+
+### 3.3 Model Errors
+
+| # | File | Issue | Severity |
+|---|------|-------|----------|
+| E11 | `User.php:16` | Role enum only `['admin', 'guest']` — missing `manager` role in migration | **CRITICAL** |
+| E12 | `RestaurantOrder.php` | Duplicate fields: `total` and `total_price`, `status` and `order_status` | **MEDIUM** |
+| E13 | `RoomType.php:52` | `hasManyThrough` for bookings could cause N+1 queries | **LOW** |
+
+### 3.4 View Errors
+
+| # | File | Issue | Severity |
+|---|------|-------|----------|
+| E14 | `landing/index.blade.php:175-184` | Facilities are hardcoded, not from database | **MEDIUM** |
+| E15 | Various views | Potential XSS where `{{ $var }}` is used but some user-generated content may not be properly escaped | **LOW** |
+
+### 3.5 Middleware Errors
+
+| # | File | Issue | Severity |
+|---|------|-------|----------|
+| E16 | `RoleMiddleware.php:18` | Only checks single role — admin cannot access manager routes and vice versa | **MEDIUM** |
+| E17 | `bootstrap/app.php:21-24` | CSRF exception path `midtrans/callback` doesn't match actual route `payment/callback` | **CRITICAL** |
+
+### 3.6 Authentication/Authorization Errors
+
+| # | File | Issue | Severity |
+|---|------|-------|----------|
+| E18 | `routes/web.php:116` | User routes use `role:guest` middleware — but `manager` role can't access user dashboard | **MEDIUM** |
+| E19 | `AuthController.php:110-125` | Login-as logic is fragile — could be bypassed | **LOW** |
 
 ---
 
-## Issue #4
+## 4. 🐛 BUG FINDER
 
-**Severity:** HIGH
-
-**Problem:**
-Midtrans server-to-server callback `/payment/callback` cannot update any restaurant order's payment status because it only looks up by `midtrans_order_id`, which is never populated in the database (Issue #1). The callback silently fails with a 404 for ALL restaurant orders.
-
-**Evidence:**
-`app/Http/Controllers/MidtransCallbackController.php` lines 37-76:
-```php
-if (str_starts_with($orderId, 'restaurant-')) {
-    // ... determine payment status ...
-
-    $restaurantOrder = \App\Models\RestaurantOrder::query()
-        ->where('midtrans_order_id', $orderId)   // NEVER matches (Issue #1)
-        ->first();
-
-    if (!$restaurantOrder) {
-        Log::warning('Midtrans callback: RestaurantOrder tidak ditemukan', ['order_id' => $orderId]);
-        return response('RestaurantOrder not found', 404);  // ← Silent failure
-    }
-    // Update is NEVER reached
-    $restaurantOrder->update([...]);
-}
-```
-
-**Root Cause:**
-The callback handler assumes the order exists with the matching `midtrans_order_id`. Since this field is never filled (Issue #1), the callback always returns 404.
-
-**Affected Files:**
-- `app/Http/Controllers/MidtransCallbackController.php`
-- Storage logs will show continuous "RestaurantOrder tidak ditemukan" warnings
-
-**Why it breaks the flow:**
-- Midtrans considers the callback successful (HTTP 200 expected, but we return 404)
-- Midtrans may retry, continuing to fail
-- Payment status is NEVER updated via the primary callback channel
-- The ONLY path to update payment status is via `paymentFinish()` browser redirect
-- If the browser redirect fails (user closes tab, network issue, etc.), the order is stuck in 'pending' forever
-- Restaurant income never counted in manager finance if payment_status is not 'paid'
-- Finance report inconsistency: booking payments work (via callback), restaurant payments don't
-
-**Recommended Fix:**
-Fix Issue #1 first. Consider also adding a fallback lookup by `invoice_number` or `guest_id + created_at` in the callback.
+| # | Bug | File | Severity |
+|---|-----|------|----------|
+| B1 | **Midtrans callback blocked by CSRF** — CSRF exception path is `midtrans/callback` but actual route is `payment/callback`. Midtrans server-to-server callback will be rejected with 419 | `bootstrap/app.php:22` | **CRITICAL** |
+| B2 | **Booking double-booking possible** — Race condition: two users booking the same room type simultaneously could both get `availableBetween` to return the same room | `BookingController.php:44-46` | **HIGH** |
+| B3 | **Room status not reset on cancel** — `cancel()` only resets room to available if status was `occupied`, but room could be `confirmed` without being `occupied` | `AdminBookingController.php:63` | **MEDIUM** |
+| B4 | **Restaurant route duplication** — Cart routes defined twice (lines 101-113 and 133-144) causing potential 404 errors | `routes/web.php` | **MEDIUM** |
+| B5 | **Payment finish without auth** — `/payment/finish` route is outside auth middleware but tries to access `Auth::user()` | `BookingController.php:144` | **MEDIUM** |
+| B6 | **Invoice number uses `$this->id`** — If booking is deleted (soft delete), ID could be reused | `Booking.php:77` | **LOW** |
+| B7 | **Manager role missing from migration** — Users table enum only has `admin` and `guest`, so creating a manager via seeder will fail | `migrations/0001_01_01_000000_create_users_table.php:16` | **CRITICAL** |
+| B8 | **Restaurant order `total_price` and `total` are duplicates** — Both store same value, could cause inconsistency | `RestaurantController.php:348-349` | **MEDIUM** |
 
 ---
 
-## Issue #5
+## 5. 🗄️ DATABASE REVIEW
 
-**Severity:** HIGH
+### Migration Files Found:
+1. `0001_01_01_000000_create_users_table.php` — Users, password_resets, sessions
+2. `2026_07_05_180347_add_full_name_to_guests_table.php` — Add full_name to guests
+3. `2026_07_10_000000_add_midtrans_order_id_to_restaurant_orders_table.php`
+4. `2026_07_13_000001_add_order_number_to_restaurant_orders_table.php`
 
-**Problem:**
-Order is pre-created in `payment()` method BEFORE payment confirmation, but if the `paymentFinish()` safety-net creates a second order, the first pending order becomes an ORPHAN record. There is no cleanup mechanism.
+### Issues:
 
-**Evidence:**
-`app/Http/Controllers/RestaurantController.php` lines 327-377:
-```php
-// This runs BEFORE payment, just showing the payment page
-DB::transaction(function () use ($guest, $checkout, $orderId) {
-    // Creates order with payment_status = 'pending'
-    $order = RestaurantOrder::create([...]);
-    // Creates order details
-    RestaurantOrderDetail::create([...]);
-});
-```
+| # | Issue | Severity |
+|---|-------|----------|
+| D1 | **Missing `manager` in role enum** — Only `['admin', 'guest']` defined | **CRITICAL** |
+| D2 | **No foreign key constraints** — Most tables lack proper FK constraints (cascade on delete) | **HIGH** |
+| D3 | **No soft deletes** — No `deleted_at` on any table | **MEDIUM** |
+| D4 | **Missing indexes** — No indexes on `status`, `check_in`, `check_out`, `payment_status` columns | **MEDIUM** |
+| D5 | **No unique constraint on `room_number`** — Could have duplicate room numbers | **MEDIUM** |
+| D6 | **Missing migrations for:** gallery, facilities, hotel_profiles, testimonials, banners, faqs, dynamic_pricings, booking_histories, room_facilities, restaurant_menus, restaurant_orders, restaurant_order_details, payments | **HIGH** |
+| D7 | **Naming convention inconsistency** — Some tables use snake_case, some don't follow Laravel conventions | **LOW** |
 
-Then in `paymentFinish()` (lines 427-510):
-```php
-// When it can't find the pre-created order, it creates ANOTHER one
-$order = RestaurantOrder::create([...]);  // payment_status = 'paid'
-```
-
-**Root Cause:**
-The pre-creation in `payment()` is intended to show the order immediately after payment, but it creates a race condition where two orders exist for one payment.
-
-**Affected Files:**
-- `app/Http/Controllers/RestaurantController.php`
-- `app/Models/RestaurantOrder.php`
-
-**Why it breaks the flow:**
-- Duplicate orders confuse the guest's order history
-- If `paymentFinish()` fails, the orphan 'pending' order remains visible but the actual paid order never gets created
-- Stock decrement happens in `paymentFinish()` but not in `payment()`, causing inconsistency
-- Financial reporting counts only one order (the paid one) but the orphan's items are not decremented from stock
-
-**Recommended Fix:**
-Remove the pre-creation from `payment()`. Only create the order when payment is confirmed (in `paymentFinish()` or callback). If you need to show order ID before payment, save to session only.
+### Database Score: **60/100**
 
 ---
 
-# MEDIUM SEVERITY ISSUES
+## 6. 🔒 SECURITY AUDIT
+
+| # | Issue | Severity |
+|---|-------|----------|
+| S1 | **CSRF bypass not working** — Midtrans callback will fail because exception path is wrong | **CRITICAL** |
+| S2 | **No rate limiting on login** — Brute force attack possible | **HIGH** |
+| S3 | **No rate limiting on registration** — Bot registration possible | **HIGH** |
+| S4 | **No CAPTCHA on registration** — Only on login | **MEDIUM** |
+| S5 | **Mass assignment protection** — `$fillable` is used correctly in most models | ✅ OK |
+| S6 | **Password hashing** — Using `Hash::make()` and `'hashed'` cast | ✅ OK |
+| S7 | **XSS protection** — Blade auto-escapes with `{{ }}`, but some raw echoes may exist | ⚠ Check |
+| S8 | **SQL injection** — Using Eloquent ORM, safe from injection | ✅ OK |
+| S9 | **File upload validation** — Avatar upload in BookingController has no validation rules | **MEDIUM** |
+| S10 | **Session security** — Session regeneration on login/logout | ✅ OK |
+| S11 | **RoleMiddleware only checks exact match** — No role hierarchy | **LOW** |
+
+### Security Score: **50/100**
 
 ---
 
-## Issue #6
+## 7. 📝 CODE QUALITY
 
-**Severity:** MEDIUM
+| # | Issue | File | Severity |
+|---|-------|------|----------|
+| C1 | **Controller terlalu besar** — `RestaurantController` (570 lines) | `RestaurantController.php` | **HIGH** |
+| C2 | **Duplikasi kode** — Cart/checkout logic duplicated in `RestaurantController` and `paymentFinish` | `RestaurantController.php` | **HIGH** |
+| C3 | **No Service Layer** — Business logic mixed in controllers | Multiple controllers | **MEDIUM** |
+| C4 | **No Repository Pattern** — Direct DB queries in controllers | Multiple controllers | **LOW** |
+| C5 | **No FormRequest for login** — Validation inline in controller | `AuthController.php:66-69` | **LOW** |
+| C6 | **Helper functions in global namespace** — Could conflict with other packages | `Helper.php` | **LOW** |
+| C7 | **SOLID violations** — RestaurantController violates Single Responsibility | `RestaurantController.php` | **HIGH** |
+| C8 | **Clean code** — Generally good naming, but some methods are too long | Various | **MEDIUM** |
 
-**Problem:**
-Variable scope/shadowing bug in `payment()` method. `$subtotal` and `$tax` are calculated outside the DB transaction closure (lines 300-302) then recalculated and shadowed INSIDE the closure (lines 342-343). The outer variables are used for the view, the inner ones for the DB. If the transaction recalculates differently, the view shows different amounts than what's stored.
-
-**Evidence:**
-`app/Http/Controllers/RestaurantController.php` lines 300-302:
-```php
-$subtotal = collect($checkout['cart'])->sum(fn($item) => ...);
-$tax = round($subtotal * 0.1, 2);
-$total = $subtotal + $tax;
-```
-
-Lines 342-343 inside closure:
-```php
-$order = RestaurantOrder::create([
-    'subtotal' => $subtotal = $items->sum(fn($i) => ...),  // Shadows outer $subtotal
-    'tax' => $tax = round($subtotal * 0.1, 2),              // Uses inner $subtotal
-    'total' => $subtotal + $tax,                            // Inner scope
-    'total_price' => $subtotal + $tax,
-```
-
-**Why it breaks the flow:**
-- Minor: if `$checkout['cart']` differs from `$items` (e.g., by the time the transaction executes), the displayed total on payment page could differ from the stored total
-- Could cause tax calculation inconsistencies in edge cases
-
-**Recommended Fix:**
-Pull the subtotal/tax calculation out of the closure into a shared variable before the transaction, and reuse it both for the view and the DB insertion.
+### Code Quality Score: **55/100**
 
 ---
 
-## Issue #7
+## 8. 🎨 UI REVIEW
 
-**Severity:** MEDIUM
+| # | Aspect | Rating | Notes |
+|---|--------|--------|-------|
+| U1 | Responsive | ⚠ Good | Landing page is responsive, admin area needs checking |
+| U2 | Konsistensi | ✅ Good | Consistent use of Tailwind, amber/gold theme |
+| U3 | Sidebar | ✅ Good | Admin sidebar is well-structured |
+| U4 | Navbar | ✅ Good | Clean navigation |
+| U5 | Card | ✅ Good | Room cards, dashboard cards look professional |
+| U6 | Table | ✅ Good | Data tables are clean |
+| U7 | Form | ✅ Good | Forms are well-designed |
+| U8 | Button | ✅ Good | Consistent button styling |
+| U9 | Warna | ✅ Good | Amber/gold theme fits hotel branding |
+| U10 | Font | ✅ Good | Playfair Display for headings |
+| U11 | UX | ⚠ Good | Some flows could be smoother (booking flow) |
 
-**Problem:**
-Stock decrement in `paymentFinish()` happens twice for the same order: once in the safety-net creation loop (lines 484-486) and once in the post-creation loop (lines 500-509). This double-decrements stock for safety-net creations.
-
-**Evidence:**
-`app/Http/Controllers/RestaurantController.php`:
-```php
-// Lines 484-486: Inside safety-net order creation
-if ($menu->stock_quantity !== null) {
-    $menu->decrement('stock_quantity', $qty);
-}
-
-// Lines 500-509: Outside the safety-net block, runs for ALL cases
-$order->loadMissing(['details']);
-foreach ($order->details as $detail) {
-    $menu = RestaurantMenu::lockForUpdate()->find($detail->restaurant_menu_id);
-    if ($menu && $menu->stock_quantity !== null) {
-        $menu->decrement('stock_quantity', (int)$detail->quantity);
-    }
-}
-```
-
-**Why it breaks the flow:**
-- Stock quantity is decremented TWICE for safety-net orders
-- Over time, stock goes negative or runs out prematurely
-- Regular flow (order found by midtrans_order_id) only decrements once (the second loop)
-
-**Recommended Fix:**
-Remove the stock decrement from the safety-net creation block (lines 484-486). Only decrement in the post-creation loop (lines 500-509), which runs for all cases.
+### UI Score: **75/100**
 
 ---
 
-## Issue #8
+## 9. ⚡ PERFORMANCE REVIEW
 
-**Severity:** MEDIUM
+| # | Issue | Severity |
+|---|-------|----------|
+| P1 | **N+1 Query potential** — `RoomType::with('facilities')` is used but `hasManyThrough` for bookings could cause N+1 | **MEDIUM** |
+| P2 | **No caching** — Hotel profile, room types, facilities are queried on every request | **HIGH** |
+| P3 | **No image optimization** — Images loaded from Unsplash, no lazy loading configuration | **LOW** |
+| P4 | **No pagination on some queries** — `Gallery::take(8)` is fine but no pagination for large datasets | **LOW** |
+| P5 | **Eager loading mostly good** — Controllers use `with()` for relationships | ✅ OK |
+| P6 | **No queue for heavy operations** — PDF generation, email sending are synchronous | **MEDIUM** |
 
-**Problem:**
-The guest name in `dine_in` mode is NOT saved from the checkout form. In `storeCheckout()`, `guest_name` is only set for `dine_in`, but in `payment()`, the `guest_name` is read from `$checkout['details']['guest_name']` which only exists for `dine_in`. For `room_service`, `guest_name` is always null.
-
-**Evidence:**
-`app/Http/Controllers/RestaurantController.php` lines 274-277:
-```php
-'guest_name' => $request->dining_type === 'dine_in' ? $request->guest_name : null,
-'room_number' => $request->dining_type === 'room_service' ? $request->room_number : null,
-```
-
-This is by design, so not a bug per se.
+### Performance Score: **55/100**
 
 ---
 
-# LOW SEVERITY ISSUES
+## 10. 🏆 LARAVEL BEST PRACTICE
+
+| # | Practice | Status | Notes |
+|---|----------|--------|-------|
+| L1 | Use Eloquent ORM | ✅ | Yes |
+| L2 | Use Form Requests | ⚠ | Only `RegisterRequest`, `StoreBookingRequest`, `StoreRestaurantCartRequest`, `StoreRestaurantCheckoutRequest` |
+| L3 | Use Resource Controllers | ⚠ | Some, not all |
+| L4 | Use Service Layer | ❌ | No service layer except `MidtransService` |
+| L5 | Use Repository Pattern | ❌ | Not implemented |
+| L6 | Use Events/Listeners | ⚠ | Only `Registered` event |
+| L7 | Use Notifications | ⚠ | Only email verification |
+| L8 | Use Queues | ❌ | Not implemented |
+| L9 | Use Policies/Gates | ❌ | Using simple middleware instead |
+| L10 | Use Database Migrations | ⚠ | Missing many migrations |
+| L11 | Use Seeders | ⚠ | Incomplete |
+| L12 | Use Config files | ✅ | Good |
+| L13 | Use Env files | ✅ | Good |
+| L14 | Use Localization | ❌ | Not implemented |
+| L15 | Use Testing | ❌ | Minimal/no tests |
 
 ---
 
-## Issue #9
+## 11. ❌ MISSING FEATURES
 
-**Severity:** LOW
-
-**Problem:**
-The `payment()` method generates `$orderId = 'restaurant-' . uniqid()` which is not cryptographically secure and could theoretically collide under high concurrency.
-
-**Recommended Fix:**
-Use `uniqid('restaurant-', true)` for more entropy, or better: `Str::uuid()`.
-
----
-
-## Issue #10
-
-**Severity:** LOW
-
-**Problem:**
-The `getSubtotalAttribute()` accessor in `RestaurantOrderDetail` (line 42) re-computes subtotal from quantity × price each time it's accessed, ignoring the stored `subtotal` column value. The migration added a `subtotal` column, but the accessor overrides it.
-
-**Evidence:**
-`app/Models/RestaurantOrderDetail.php` lines 40-43:
-```php
-public function getSubtotalAttribute(): float
-{
-    return $this->quantity * $this->price;
-}
-```
-
-This means the stored `subtotal` column is never used when reading, only when writing.
-
-**Why it breaks the flow:**
-- Not a critical issue since the computed value matches the stored value (ideally)
-- If the price or quantity were updated after creation without recalculating subtotal, the stored value would be stale but the accessor would return the correct calculated value
-- Minor inconsistency between read and write
+| # | Feature | Priority | Notes |
+|---|---------|----------|-------|
+| M1 | **Admin CRUD Gallery** | HIGH | No gallery management |
+| M2 | **Admin CRUD Facility** | HIGH | No facility management |
+| M3 | **Admin CRUD Staff** | HIGH | No staff/user management for admin/manager roles |
+| M4 | **Contact Page** | MEDIUM | No contact form or page |
+| M5 | **Occupancy Report (Manager)** | HIGH | Required feature |
+| M6 | **Booking Report (Manager)** | HIGH | Required feature |
+| M7 | **Room Search Functionality** | MEDIUM | Search bar exists but no logic |
+| M8 | **CAPTCHA on Register** | MEDIUM | Only on login |
+| M9 | **Manual Payment Management** | MEDIUM | Admin cannot manually update payment status |
+| M10 | **Hotel Profile Page (Public)** | LOW | No dedicated profile page |
+| M11 | **Dynamic Facilities on Landing** | LOW | Currently hardcoded |
+| M12 | **Testimonials CRUD (Admin)** | LOW | No admin management for testimonials |
 
 ---
 
-# ROOT CAUSE RANKING
+## 12. 📁 FOLDER STRUCTURE REVIEW
 
-Ranked from most likely to least likely:
-
-| Rank | Issue # | Root Cause | Confidence |
-|------|---------|------------|------------|
-| 1 | #1 | `midtrans_order_id` not in `$fillable` | 100% |
-| 2 | #3 | Dual route registration / wrong middleware | 85% |
-| 3 | #4 | Midtrans callback cannot match restaurant orders | 80% |
-| 4 | #2 | No idempotency guard → duplicate orders | 75% |
-| 5 | #5 | Pre-creation in payment() creates orphans | 70% |
-| 6 | #7 | Double stock decrement in paymentFinish() | 60% |
-| 7 | #6 | Variable shadowing in payment() | 40% |
-| 8 | #9 | Weak order_id generation | 20% |
-| 9 | #10 | Subtotal accessor override | 15% |
+```
+hmis-ukk/
+├── app/
+│   ├── Enums/              ✅ Good — PaymentStatus enum
+│   ├── Helpers/            ✅ Good — Helper functions
+│   ├── Http/
+│   │   ├── Controllers/    ⚠ Some controllers too large
+│   │   │   ├── Admin/      ✅ Good organization
+│   │   │   └── Manager/    ⚠ Missing controllers
+│   │   ├── Middleware/     ✅ RoleMiddleware
+│   │   └── Requests/       ⚠ Only 4 Form Requests
+│   ├── Models/             ✅ Good — 18 models
+│   ├── Providers/          ✅ ViewServiceProvider
+│   ├── Services/           ⚠ Only MidtransService
+│   └── View/               ⚠ Missing
+├── bootstrap/              ✅ Good
+├── config/                 ✅ Good
+├── database/
+│   ├── migrations/         ❌ Missing many migrations
+│   └── seeders/            ⚠ Incomplete
+├── resources/
+│   └── views/              ✅ Well-organized
+├── routes/
+│   └── web.php             ⚠ Some issues
+└── public/                 ✅ Good
+```
 
 ---
 
-# SINGLE MOST PROBABLE ROOT CAUSE
+## 13. 🏅 FINAL SCORE
 
-**Issue #1: `midtrans_order_id` missing from `RestaurantOrder::$fillable`**
+| Area | Score |
+|------|-------|
+| **Backend** | 65/100 |
+| **Frontend** | 70/100 |
+| **Database** | 60/100 |
+| **Architecture** | 55/100 |
+| **Security** | 50/100 |
+| **Maintainability** | 55/100 |
+| **UI/UX** | 75/100 |
+| **Overall** | **62/100** |
 
-**Confidence: 95%**
+---
 
-## Explanation
+## 14. 🎯 PRIORITY FIX
 
-This single bug creates a cascade of failures that explains ALL five problem statements:
+### 🔴 CRITICAL (Fix Immediately)
+1. **CSRF exception path mismatch** — Change `midtrans/callback` to `payment/callback` in `bootstrap/app.php`
+2. **Manager role missing from migration** — Add `manager` to role enum in users table migration
+3. **Midtrans callback blocked** — Payment processing will fail in production
 
-### Problem 1: "Customer successfully completes Midtrans payment. Payment page says success."
-✅ Midtrans payment succeeds. The Snap popup shows success. The `onSuccess` callback fires. Everything looks good to the customer.
+### 🟠 HIGH (Fix Soon)
+4. **Race condition in booking** — Use database transaction with `lockForUpdate()` when assigning rooms
+5. **Duplicate restaurant routes** — Remove duplicate route definitions
+6. **No rate limiting on auth** — Add throttle middleware to login/register
+7. **Missing Gallery CRUD** — Build admin gallery management
+8. **Missing Facility CRUD** — Build admin facility management
+9. **Missing Occupancy Report** — Build for manager role
+10. **Missing Booking Report** — Build for manager role
 
-### Problem 2 & 3: "Restaurant Order History is EMPTY after payment AND after logout/login"
-The `paymentFinish()` redirect handler searches for the order by `midtrans_order_id`:
-```php
-$order = RestaurantOrder::query()
-    ->where('midtrans_order_id', $orderId)  // ← NULL in DB, never matches
-    ->where('guest_id', $guest->id)
-    ->first();
-```
-Since the field was never saved, the query returns null. The fallback safety-net code tries to create the order from session data. **If the session data expired or was lost** during the redirect from Midtrans (e.g., session garbage collection, race condition, or the redirect opened a new session context), the safety-net throws a RuntimeException:
+### 🟡 MEDIUM (Fix When Possible)
+11. **RestaurantController too large** — Extract to service layer
+12. **No caching** — Add cache for hotel profile, room types
+13. **No CAPTCHA on register** — Add reCAPTCHA to registration
+14. **Room search not functional** — Implement search logic
+15. **Contact page missing** — Build contact page
+16. **Missing foreign key constraints** — Add to migrations
+17. **Missing indexes** — Add indexes on frequently queried columns
 
-```php
-if (empty($checkout['cart'] ?? []) || empty($checkout['details'] ?? [])) {
-    throw new \RuntimeException('Restaurant order not found for midtrans_order_id');
-}
-```
+### 🟢 LOW (Nice to Have)
+18. **Soft deletes** — Add to relevant models
+19. **Queue for PDF/email** — Offload heavy operations
+20. **Tests** — Add PHPUnit tests
+21. **Localization** — Add language files
+22. **Image optimization** — Add lazy loading, thumbnails
 
-This exception is caught, logged, and the user is redirected to the orders page with an error message ("Terjadi kesalahan saat menyimpan pesanan"). **No order was ever created with 'paid' status.** The pre-created order from `payment()` exists with `payment_status = 'pending'`, but it was never updated to 'paid' because:
-1. The server callback returned 404 (midtrans_order_id was null)
-2. The paymentFinish safety-net failed (session data missing)
+---
 
-The user sees an empty order history because:
-- If the pre-created order exists (pending), it might be confused with no order at all if the user refreshes/logs out
-- If the safety-net also failed, there truly is NO paid order in the database
+## 15. 🗺️ ROADMAP
 
-**After logout/login:** The pending order from `payment()` still exists but appears as a pending payment, not a completed order. The user might not consider a "pending" order as "history." Additionally, if the Guest → User relationship is session-based (the user logs in and the `$guest` resolves to a different record), the pre-created order wouldn't even be visible.
+### Phase 1 — Critical Fixes (1-2 days)
+- [ ] Fix CSRF exception path for Midtrans callback
+- [ ] Fix manager role in migration
+- [ ] Add database transaction + lockForUpdate to booking
+- [ ] Remove duplicate restaurant routes
 
-### Problem 4: "Manager financial report sometimes doesn't include restaurant income"
-The ManagerFinanceController (line 73) queries:
-```php
-$restaurantQuery = RestaurantOrder::where('payment_status', 'paid');
-```
+### Phase 2 — Core Features (3-5 days)
+- [ ] Build Admin Gallery CRUD
+- [ ] Build Admin Facility CRUD
+- [ ] Build Occupancy Report (Manager)
+- [ ] Build Booking Report (Manager)
+- [ ] Add rate limiting to auth routes
 
-If the order was never updated to 'paid' (because the callback failed and paymentFinish failed), it won't appear in the financial report. Even if `paymentFinish()` creates a duplicate order as 'paid', the midtrans_order_id is still null, and the system loses the ability to reconcile payments.
+### Phase 3 — Enhancements (3-5 days)
+- [ ] Refactor RestaurantController — extract service layer
+- [ ] Add caching for hotel profile, room types
+- [ ] Add CAPTCHA to registration
+- [ ] Implement room search functionality
+- [ ] Build contact page
 
-### Problem 5: "The overall restaurant order flow feels inconsistent"
-- Some orders might appear as 'pending' (from pre-creation)
-- Some orders might appear as 'paid' (from safety-net)
-- Some orders might not appear at all (if both failed)
-- The callback logs show continuous "RestaurantOrder not found" errors
-- Stock is inconsistently decremented
-- No reliable way to reconcile which payments went through vs. which orders were created
+### Phase 4 — Hardening (2-3 days)
+- [ ] Add foreign key constraints to migrations
+- [ ] Add database indexes
+- [ ] Add soft deletes
+- [ ] Add file upload validation
+- [ ] Security audit pass
 
-## Fix Priority
+### Phase 5 — Polish (2-3 days)
+- [ ] Add PHPUnit tests
+- [ ] Add queue for PDF/email
+- [ ] Image optimization
+- [ ] UI polish and consistency check
+- [ ] Performance optimization
 
-1. **IMMEDIATE:** Add `'midtrans_order_id'` to `RestaurantOrder::$fillable`
-2. **IMMEDIATE:** Add unique constraint `(guest_id, midtrans_order_id)` to prevent duplicates
-3. **HIGH:** Remove duplicate route definitions, use single middleware stack
-4. **HIGH:** Remove pre-creation from `payment()`, only create on confirmation
-5. **MEDIUM:** Fix double stock decrement in `paymentFinish()`
-6. **MEDIUM:** Add fallback lookup in callback (by invoice_number or guest_id + date)
+### Phase 6 — Deployment (1-2 days)
+- [ ] Environment configuration
+- [ ] Database migration testing
+- [ ] Midtrans production configuration
+- [ ] SMTP configuration
+- [ ] Final QA pass
+
+**Total Estimated Time: 12-20 days**
+
+---
+
+## 📋 SUMMARY OF FILES NEEDING FIXES
+
+| File | Issue | Priority |
+|------|-------|----------|
+| `bootstrap/app.php` | CSRF exception path mismatch | 🔴 CRITICAL |
+| `database/migrations/0001_01_01_000000_create_users_table.php` | Missing `manager` role | 🔴 CRITICAL |
+| `routes/web.php` | Duplicate restaurant routes, missing routes | 🟠 HIGH |
+| `app/Http/Controllers/BookingController.php` | Race condition, predictable order ID | 🟠 HIGH |
+| `app/Http/Controllers/RestaurantController.php` | Too large, code duplication | 🟡 MEDIUM |
+| `app/Http/Controllers/AuthController.php` | No rate limiting, no register CAPTCHA | 🟡 MEDIUM |
+| `app/Http/Controllers/LandingController.php` | No search logic | 🟡 MEDIUM |
+| `app/Http/Middleware/RoleMiddleware.php` | Single role check only | 🟡 MEDIUM |
+| `app/Models/RestaurantOrder.php` | Duplicate fields | 🟡 MEDIUM |
+| `resources/views/landing/index.blade.php` | Hardcoded facilities | 🟢 LOW |
+| `database/seeders/DatabaseSeeder.php` | Incomplete seeders | 🟡 MEDIUM |
+
+---
+
+*End of Audit Report*

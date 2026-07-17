@@ -15,7 +15,21 @@ class Facility extends Model
         'description',
         'icon',
         'image',
+        'status',
+        'display_order',
     ];
+
+    // ==================== SCOPES ====================
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', true);
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('display_order', 'asc');
+    }
 
     // ==================== ACCESSORS ====================
 

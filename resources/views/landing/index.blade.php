@@ -171,24 +171,27 @@
                 <h2 class="font-playfair text-4xl md:text-5xl font-bold text-gray-900">Our Amenities</h2>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
-                @php
-                    $facilities = [
-                        ['icon' => '', 'name' => 'Swimming Pool'],
-                        ['icon' => '🍽️', 'name' => 'Restaurant'],
-                        ['icon' => '💆', 'name' => 'Spa & Wellness'],
-                        ['icon' => '🏋️', 'name' => 'Fitness Center'],
-                        ['icon' => '', 'name' => 'Free WiFi'],
-                        ['icon' => '🅿️', 'name' => 'Free Parking'],
-                        ['icon' => '🛎️', 'name' => '24h Room Service'],
-                        ['icon' => '🍸', 'name' => 'Bar & Lounge'],
-                    ];
-                @endphp
-                @foreach($facilities as $facility)
+                @forelse($facilities as $facility)
                     <div class="text-center p-6 rounded-lg hover:bg-amber-50 transition group">
-                        <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">{{ $facility['icon'] }}</div>
-                        <h3 class="font-semibold text-gray-800 text-sm tracking-wider uppercase">{{ $facility['name'] }}</h3>
+                        @if($facility->icon)
+                            <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">{{ $facility->icon }}</div>
+                        @elseif($facility->image)
+                            <div class="mb-4 flex justify-center">
+                                <img src="{{ $facility->image_url }}" alt="{{ $facility->name }}" 
+                                     class="h-16 w-16 object-cover rounded-lg group-hover:scale-110 transition-transform">
+                            </div>
+                        @else
+                            <div class="text-5xl mb-4 text-gray-300 group-hover:scale-110 transition-transform">
+                                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                </svg>
+                            </div>
+                        @endif
+                        <h3 class="font-semibold text-gray-800 text-sm tracking-wider uppercase">{{ $facility->name }}</h3>
                     </div>
-                @endforeach
+                @empty
+                    <p class="text-center text-gray-500 col-span-4 py-12">Belum ada fasilitas tersedia.</p>
+                @endforelse
             </div>
         </div>
     </section>

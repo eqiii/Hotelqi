@@ -192,18 +192,13 @@
 
     {{-- Midtrans Snap JS --}}
     @if(isset($snapToken) && $snapToken)
+        <div id="snap-container"></div>
         <script src="{{ config('mdtrans.is_production') ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}"
                 data-client-key="{{ config('mdtrans.client_key') }}"></script>
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const payButton = document.getElementById('pay-button');
-                if (!payButton) return;
-
-                payButton.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    payButton.disabled = true;
-                    payButton.innerHTML = '<span class="animate-spin mr-2">⏳</span> Memproses...';
-
+            document.getElementById('pay-button').addEventListener('click', function (e) {
+                e.preventDefault();
+                if (typeof window.snap !== 'undefined') {
                     window.snap.pay('{{ $snapToken }}', {
                         onSuccess: function(result) {
                             window.location.href = '{{ route('payment.finish') }}?order_id=booking-{{ $booking->id }}&transaction_status=settlement';
@@ -212,16 +207,16 @@
                             window.location.href = '{{ route('payment.finish') }}?order_id=booking-{{ $booking->id }}&transaction_status=pending';
                         },
                         onError: function(result) {
-                            payButton.disabled = false;
-                            payButton.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg> Bayar Sekarang — {{ format_rupiah($booking->total_price) }}';
                             alert('Pembayaran gagal. Silakan coba lagi.');
                         },
                         onClose: function() {
-                            payButton.disabled = false;
-                            payButton.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg> Bayar Sekarang — {{ format_rupiah($booking->total_price) }}';
+                            console.log('Customer closed the payment popup without finishing payment.');
                         }
                     });
-                });
+                } else {
+                    console.error('Midtrans Snap SDK is not loaded yet.');
+                    alert('Sistem pembayaran sedang bersiap. Silakan klik kembali dalam beberapa saat.');
+                }
             });
         </script>
     @endif

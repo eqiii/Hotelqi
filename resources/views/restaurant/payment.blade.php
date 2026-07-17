@@ -22,8 +22,8 @@
             <div class="bg-white rounded-3xl shadow border border-gray-100 p-8">
                 @if (($checkout['details']['payment_method'] ?? 'midtrans') === 'midtrans' && $snapToken)
                     <div id="snap-container"></div>
-                    <script src="https://app.sandbox.midtrans.com/snap/snap.js"
-                        data-client-key="{{ config('services.midtrans.client_key') }}"></script>
+                    <script src="{{ config('mdtrans.is_production') ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}"
+                        data-client-key="{{ config('mdtrans.client_key') }}"></script>
                     <script>
                         window.snap.pay('{{ $snapToken }}', {
                             onSuccess: function(result) {

@@ -101,6 +101,19 @@
             text-transform: uppercase;
         }
     </style>
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#c9a96e">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registered', reg))
+                    .catch(err => console.error('Service Worker registration failed', err));
+            });
+        }
+    </script>
 </head>
 
 <body class="bg-gray-50">
@@ -283,7 +296,59 @@
             </main>
         </div>
     </div>
+    <!-- SweetAlert2 & Validation Handling -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @if (session('success') || session('status'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: "{{ session('success') ?? session('status') }}",
+                    confirmButtonColor: '#c9a96e'
+                });
+            });
+        </script>
+    @endif
 
+    @if ($errors->any())
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Peringatan',
+                    text: 'Please complete all required fields.',
+                    confirmButtonColor: '#c9a96e'
+                });
+
+                const errors = @json($errors->toArray());
+                for (const fieldName in errors) {
+                    if (errors.hasOwnProperty(fieldName)) {
+                        let input = document.querySelector(`[name="${fieldName}"]`) || 
+                                    document.querySelector(`[name="${fieldName}[]"]`);
+                        if (!input) {
+                            input = document.getElementById(fieldName);
+                        }
+                        if (input) {
+                            input.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+                            input.classList.remove('border-gray-300', 'focus:border-amber-500');
+
+                            const errorMessage = errors[fieldName][0];
+                            const errorMsgElement = document.createElement('p');
+                            errorMsgElement.className = 'text-xs text-red-500 mt-1 validation-error-msg';
+                            errorMsgElement.textContent = errorMessage;
+
+                            const nextSibling = input.nextElementSibling;
+                            if (nextSibling && nextSibling.classList.contains('text-red-500')) {
+                                nextSibling.remove();
+                            }
+                            input.parentNode.appendChild(errorMsgElement);
+                        }
+                    }
+                }
+            });
+        </script>
+    @endif
 </body>
 
 </html>

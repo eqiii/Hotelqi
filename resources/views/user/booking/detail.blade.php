@@ -125,6 +125,181 @@
             </div>
             @endif
 
+            {{-- Hotel Information --}}
+            @php
+                $hotel = \App\Models\HotelProfile::getProfile();
+                
+                $hasBreakfast = false;
+                if (isset($booking->breakfast)) {
+                    $hasBreakfast = (bool) $booking->breakfast;
+                } elseif (isset($booking->has_breakfast)) {
+                    $hasBreakfast = (bool) $booking->has_breakfast;
+                }
+            @endphp
+            <div class="border-b border-gray-100 pb-6 mb-6">
+                <h2 class="font-playfair text-lg font-bold text-gray-800 mb-4">Hotel Information</h2>
+                
+                {{-- Info Grid --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {{-- 1. WiFi --}}
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-gray-700 text-xs font-semibold flex items-center gap-3">
+                        <div class="p-2 bg-amber-50 rounded-lg text-amber-600">
+                            <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a10.5 10.5 0 0114.14 0M1.06 6.06a16.5 16.5 0 0121.88 0"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">WiFi Name</p>
+                            <p class="text-sm font-semibold text-gray-800">{{ $hotel?->wifi_name ?? 'Hotel EQI Guest' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- 2. Password --}}
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-gray-700 text-xs font-semibold flex items-center gap-3">
+                        <div class="p-2 bg-amber-50 rounded-lg text-amber-600">
+                            <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">WiFi Password</p>
+                            <p class="text-sm font-semibold text-gray-800">{{ $hotel?->wifi_password ?? 'HotelEQI2026' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- 3. Check In --}}
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-gray-700 text-xs font-semibold flex items-center gap-3">
+                        <div class="p-2 bg-amber-50 rounded-lg text-amber-600">
+                            <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Check In</p>
+                            <p class="text-sm font-semibold text-gray-800">14.00 WIB</p>
+                        </div>
+                    </div>
+
+                    {{-- 4. Check Out --}}
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-gray-700 text-xs font-semibold flex items-center gap-3">
+                        <div class="p-2 bg-amber-50 rounded-lg text-amber-600">
+                            <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Check Out</p>
+                            <p class="text-sm font-semibold text-gray-800">12.00 WIB</p>
+                        </div>
+                    </div>
+
+                    {{-- 5. Alamat --}}
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-gray-700 text-xs font-semibold flex items-center gap-3">
+                        <div class="p-2 bg-amber-50 rounded-lg text-amber-600">
+                            <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Alamat Hotel</p>
+                            <p class="text-xs font-semibold text-gray-800 leading-relaxed whitespace-pre-line">{{ $hotel?->address ?? "Jl. Raya Hotel EQI No.1\nBogor\nIndonesia" }}</p>
+                        </div>
+                    </div>
+
+                    {{-- 6. Kontak --}}
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-gray-700 text-xs font-semibold flex items-center gap-3">
+                        <div class="p-2 bg-amber-50 rounded-lg text-amber-600">
+                            <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Kontak</p>
+                            <p class="text-sm font-semibold text-gray-800">{{ $hotel?->phone ?? '+62 812-3456-7890' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- 7. Breakfast --}}
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-gray-700 text-xs font-semibold flex items-center gap-3">
+                        <div class="p-2 bg-amber-50 rounded-lg text-amber-600">
+                            <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider mb-1">Breakfast</p>
+                            @if ($hasBreakfast)
+                                <span class="px-2.5 py-1 bg-green-100 text-green-800 text-[10px] font-bold rounded-full uppercase tracking-wider">Included</span>
+                            @else
+                                <span class="px-2.5 py-1 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full uppercase tracking-wider">Not Included</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- 8. Email --}}
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-gray-700 text-xs font-semibold flex items-center gap-3">
+                        <div class="p-2 bg-amber-50 rounded-lg text-amber-600">
+                            <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Email</p>
+                            <p class="text-sm font-semibold text-gray-800">{{ $hotel?->email ?? 'reservation@hoteleqi.com' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Facilities and Rules --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {{-- Facilities --}}
+                    <div>
+                        <h3 class="font-playfair text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <span class="w-1.5 h-3 bg-amber-500 rounded-full"></span>
+                            Fasilitas Hotel
+                        </h3>
+                        <ul class="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                            <li class="flex items-center gap-2 font-medium">
+                                <span class="text-green-500 font-bold">✓</span> Free WiFi
+                            </li>
+                            <li class="flex items-center gap-2 font-medium">
+                                <span class="text-green-500 font-bold">✓</span> Swimming Pool
+                            </li>
+                            <li class="flex items-center gap-2 font-medium">
+                                <span class="text-green-500 font-bold">✓</span> Restaurant
+                            </li>
+                            <li class="flex items-center gap-2 font-medium">
+                                <span class="text-green-500 font-bold">✓</span> Parking Area
+                            </li>
+                            <li class="flex items-center gap-2 font-medium">
+                                <span class="text-green-500 font-bold">✓</span> 24 Hours Reception
+                            </li>
+                            <li class="flex items-center gap-2 font-medium">
+                                <span class="text-green-500 font-bold">✓</span> Room Service
+                            </li>
+                        </ul>
+                    </div>
+
+                    {{-- Rules --}}
+                    <div>
+                        <h3 class="font-playfair text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <span class="w-1.5 h-3 bg-amber-500 rounded-full"></span>
+                            Hotel Rules
+                        </h3>
+                        <ul class="list-disc pl-4 text-xs text-gray-600 space-y-1">
+                            <li>Check-in mulai pukul 14.00 WIB.</li>
+                            <li>Check-out maksimal pukul 12.00 WIB.</li>
+                            <li>Dilarang merokok di dalam kamar.</li>
+                            <li>Dilarang membawa hewan peliharaan.</li>
+                            <li>Tunjukkan QR Code saat check-in.</li>
+                            <li>WiFi gratis tersedia di seluruh area hotel.</li>
+                            <li>Kehilangan kartu akses dikenakan biaya penggantian.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             {{-- Booking Timeline --}}
             <div class="border-b border-gray-100 pb-6 mb-6">
                 <h2 class="font-playfair text-lg font-bold text-gray-800 mb-4">Booking Timeline</h2>

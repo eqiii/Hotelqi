@@ -101,32 +101,45 @@ class BookingController extends Controller
         // Generate snap token jika payment belum lunas
         if ($booking->payment && $booking->payment->payment_method === 'midtrans' && !$booking->payment->isPaid()) {
             try {
+                Log::info('Midtrans: Memulai pembuatan Snap Token untuk Booking ID ' . $booking->id);
                 $midtrans = new MidtransService();
-                $orderId = 'booking-' . $booking->id;
+                $orderId = 'booking-' . $booking->id . '-' . uniqid();
 
-                // Gunakan snap token yang sudah ada jika masih valid
-                if ($booking->payment->midtrans_snap_token) {
-                    $snapToken = $booking->payment->midtrans_snap_token;
-                } else {
-                    $snapToken = $midtrans->createSnapToken(
-                        $midtrans->buildSnapParams(
-                            $orderId,
-                            (int) $booking->total_price,
-                            Auth::user()->name,
-                            Auth::user()->email
-                        )
-                    );
+                // Always generate a fresh Snap token (like Restaurant does).
+                // Reusing a stored token risks using an expired one, which would
+                // prevent the popup from appearing at all.
+                $finishUrl = route('payment.finish');
+                $snapParams = $midtrans->buildSnapParams(
+                    $orderId,
+                    (int) $booking->total_price,
+                    Auth::user()->name,
+                    Auth::user()->email,
+                    $finishUrl
+                );
 
-                    $booking->payment->update([
-                        'midtrans_snap_token' => $snapToken,
-                    ]);
-                }
+                Log::info('Midtrans: Snap Params untuk Booking ID ' . $booking->id, $snapParams);
+
+                $snapToken = $midtrans->createSnapToken($snapParams);
+
+                Log::info('Midtrans: Snap Token berhasil dibuat untuk Booking ID ' . $booking->id . ': ' . $snapToken);
+
+                $booking->payment->update([
+                    'midtrans_snap_token' => $snapToken,
+                ]);
             } catch (\Exception $e) {
-                // Log error tapi jangan crash
-                Log::error('Midtrans error: ' . $e->getMessage());
+                Log::error('Midtrans error saat membuat Snap Token untuk Booking ID ' . $booking->id . ': ' . $e->getMessage(), [
+                    'exception' => $e
+                ]);
                 $snapToken = null;
             }
         }
+
+        Log::info('Booking Snap Debug', [
+            'booking_id' => $booking->id,
+            'snapToken' => $snapToken,
+            'payment_exists' => (bool)$booking->payment,
+            'payment_status' => $booking->payment?->payment_status,
+        ]);
 
         return view('user.payment', compact('booking', 'snapToken'));
     }
@@ -138,7 +151,8 @@ class BookingController extends Controller
         $booking = null;
 
         if ($orderId) {
-            $bookingId = (int) str_replace('booking-', '', $orderId);
+            $parts = explode('-', $orderId);
+            $bookingId = isset($parts[1]) ? (int) $parts[1] : 0;
             $booking = Booking::with(['room.roomType', 'payment', 'guest.user'])
                 ->where('id', $bookingId)
                 ->where('guest_id', Auth::check() ? Auth::user()->guest?->id : null)

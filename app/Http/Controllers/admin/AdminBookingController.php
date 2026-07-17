@@ -37,7 +37,7 @@ class AdminBookingController extends Controller
             $booking->payment->markAsPaid();
         }
 
-        return redirect()->back()->with('status', 'Booking berhasil dikonfirmasi.');
+        return redirect()->route('admin.bookings.index')->with('success', 'Booking berhasil dikonfirmasi.');
     }
 
     public function checkIn(Booking $booking)
@@ -45,7 +45,7 @@ class AdminBookingController extends Controller
         $booking->updateStatus('checked_in', 'Tamu telah check-in.', auth()->id());
         $booking->room->update(['status' => 'occupied']);
 
-        return redirect()->back()->with('status', 'Check-in berhasil.');
+        return redirect()->route('admin.bookings.index')->with('success', 'Check-in berhasil.');
     }
 
     public function checkOut(Booking $booking)
@@ -53,7 +53,7 @@ class AdminBookingController extends Controller
         $booking->updateStatus('checked_out', 'Tamu telah check-out.', auth()->id());
         $booking->room->update(['status' => 'available']);
 
-        return redirect()->back()->with('status', 'Check-out berhasil.');
+        return redirect()->route('admin.bookings.index')->with('success', 'Check-out berhasil.');
     }
 
     public function cancel(Booking $booking)
@@ -64,6 +64,6 @@ class AdminBookingController extends Controller
             $booking->room->update(['status' => 'available']);
         }
 
-        return redirect()->back()->with('status', 'Booking berhasil dibatalkan.');
+        return redirect()->route('admin.bookings.index')->with('success', 'Booking berhasil dibatalkan.');
     }
 }

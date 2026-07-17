@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Facility;
 use App\Models\RoomType;
 use App\Models\Testimonial;
 use App\Models\Gallery;
@@ -17,8 +18,9 @@ class LandingController extends Controller
         $roomTypes = RoomType::with('facilities')->take(3)->get();
         $testimonials = Testimonial::approved()->take(3)->get();
         $galleries = Gallery::take(8)->get();
+        $facilities = Facility::active()->ordered()->get();
 
-        return view('landing.index', compact('hotelProfile', 'roomTypes', 'testimonials', 'galleries'));
+        return view('landing.index', compact('hotelProfile', 'roomTypes', 'testimonials', 'galleries', 'facilities'));
     }
 
     public function rooms()

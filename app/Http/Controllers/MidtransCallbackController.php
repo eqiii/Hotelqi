@@ -74,7 +74,8 @@ class MidtransCallbackController extends Controller
                 return response('OK', 200);
             }
 
-            $bookingId = (int) str_replace('booking-', '', $orderId);
+            $parts = explode('-', $orderId);
+            $bookingId = isset($parts[1]) ? (int) $parts[1] : 0;
             $booking = Booking::with('payment')->find($bookingId);
 
             if (!$booking || !$booking->payment) {

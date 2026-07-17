@@ -19,8 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Kecualikan route Midtrans callback dari CSRF protection
         $middleware->validateCsrfTokens(except: [
-            'api/midtrans/callback',
-            'midtrans/callback'
+            'payment/callback'
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -24,11 +24,16 @@ class AdminFacilityController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'icon'        => ['nullable', 'string', 'max:100'],
-            'image'       => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'name'          => ['required', 'string', 'max:255'],
+            'description'   => ['nullable', 'string'],
+            'icon'          => ['nullable', 'string', 'max:100'],
+            'image'         => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'status'        => ['nullable', 'boolean'],
+            'display_order' => ['nullable', 'integer', 'min:0'],
         ]);
+
+        $data['status'] = $request->boolean('status');
+        $data['display_order'] = (int) $request->input('display_order', 0);
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('facilities', 'public');
@@ -48,11 +53,16 @@ class AdminFacilityController extends Controller
     public function update(Request $request, Facility $facility)
     {
         $data = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'icon'        => ['nullable', 'string', 'max:100'],
-            'image'       => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'name'          => ['required', 'string', 'max:255'],
+            'description'   => ['nullable', 'string'],
+            'icon'          => ['nullable', 'string', 'max:100'],
+            'image'         => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'status'        => ['nullable', 'boolean'],
+            'display_order' => ['nullable', 'integer', 'min:0'],
         ]);
+
+        $data['status'] = $request->boolean('status');
+        $data['display_order'] = (int) $request->input('display_order', 0);
 
         if ($request->hasFile('image')) {
             if ($facility->image) {

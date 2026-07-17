@@ -84,9 +84,6 @@ Route::middleware(['auth', 'throttle:6,1'])->group(function () {
 // ==================== MIDTRANS CALLBACK (No auth, diakses Midtrans server) ====================
 Route::post('/payment/callback', [MidtransCallbackController::class, 'handle'])->name('payment.callback');
 
-// ==================== PAYMENT FINISH (Bisa diakses tanpa auth karena redirect dari Midtrans) ====================
-Route::get('/payment/finish', [BookingController::class, 'finishPayment'])->name('payment.finish');
-
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         $user = \Illuminate\Support\Facades\Auth::user();
@@ -98,18 +95,8 @@ Route::middleware(['auth'])->group(function () {
         };
     })->name('dashboard');
 
-    Route::post('/restaurant/cart/add', [RestaurantController::class, 'addToCart'])->name('restaurant.cart.add');
-    Route::get('/restaurant/cart', [RestaurantController::class, 'cart'])->name('restaurant.cart');
-    Route::post('/restaurant/cart/update', [RestaurantController::class, 'updateCart'])->name('restaurant.cart.update');
-    Route::delete('/restaurant/cart/remove/{menuId}', [RestaurantController::class, 'removeFromCart'])->name('restaurant.cart.remove');
-    Route::get('/restaurant/checkout', [RestaurantController::class, 'checkout'])->name('restaurant.checkout');
-    Route::post('/restaurant/checkout', [RestaurantController::class, 'storeCheckout'])->name('restaurant.checkout.store');
-    Route::get('/restaurant/payment', [RestaurantController::class, 'payment'])->name('restaurant.payment');
-    Route::get('/restaurant/payment/finish', [RestaurantController::class, 'paymentFinish'])->name('restaurant.payment.finish');
-    Route::post('/restaurant/order', [RestaurantController::class, 'store'])->name('restaurant.order.store');
-    Route::get('/restaurant/orders', [RestaurantController::class, 'orders'])->name('restaurant.orders');
-    Route::get('/restaurant/orders/{restaurantOrder}', [RestaurantController::class, 'show'])->name('restaurant.orders.show');
-    Route::get('/restaurant/orders/{restaurantOrder}/invoice', [RestaurantController::class, 'invoice'])->name('restaurant.orders.invoice');
+    // ==================== PAYMENT FINISH (Di bawah auth demi keamanan session) ====================
+    Route::get('/payment/finish', [BookingController::class, 'finishPayment'])->name('payment.finish');
 });
 
 // ==================== USER / GUEST AREA ====================

@@ -16,6 +16,8 @@
                 <th>Image</th>
                 <th>Name</th>
                 <th>Icon</th>
+                <th>Status</th>
+                <th>Order</th>
                 <th>Aksi</th>
             </tr>
         </thead>
@@ -27,6 +29,14 @@
                     </td>
                     <td>{{ $f->name }}</td>
                     <td>{{ $f->icon ?? '-' }}</td>
+                    <td>
+                        @if ($f->status)
+                            <span class="text-green-600 font-semibold">Aktif</span>
+                        @else
+                            <span class="text-red-600 font-semibold">Nonaktif</span>
+                        @endif
+                    </td>
+                    <td>{{ $f->display_order }}</td>
                     <td>
                         <a href="{{ route('admin.facilities.edit', $f) }}">Edit</a>
                         <form action="{{ route('admin.facilities.destroy', $f) }}" method="POST" style="display:inline">

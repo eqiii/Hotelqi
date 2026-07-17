@@ -17,6 +17,19 @@
             background-attachment: fixed;
         }
     </style>
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#c9a96e">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registered', reg))
+                    .catch(err => console.error('Service Worker registration failed', err));
+            });
+        }
+    </script>
 </head>
 <body class="font-sans antialiased text-gray-900">
 
@@ -35,11 +48,11 @@
                 <!-- Menu -->
                 <div class="hidden lg:flex items-center space-x-8">
                     <a href="{{ route('home') }}" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">Home</a>
-                    <a href="#about" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">About</a>
+                    <a href="{{ route('home') }}#about" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">About</a>
                     <a href="{{ route('rooms') }}" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">Rooms</a>
                     <a href="{{ route('restaurant') }}" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">Restaurant</a>
                     <a href="{{ route('faq') }}" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">FAQ</a>
-                    <a href="#contact" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">Contact</a>
+                    <a href="{{ route('home') }}#contact" class="text-white hover:text-amber-400 text-sm tracking-widest uppercase transition">Contact</a>
                 </div>
 
                 <!-- Booking Button -->
